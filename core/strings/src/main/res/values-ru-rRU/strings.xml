@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Фильтр</string>
     <string name="desc_node_filter_clear">очистить фильтр узлов</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">Включить неизвестные</string>
     <string name="node_filter_only_online">Скрыть узлы офлайн</string>
     <string name="node_filter_only_direct">Отображать только слышимые узлы</string>
     <string name="node_filter_ignored">Вы просматриваете игнорируемые узлы,\nНажмите, чтобы вернуться к списку узлов.</string>
     <string name="node_filter_show_details">Показать детали</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">Варианты сортировки узлов</string>
     <string name="node_sort_alpha">А-Я</string>
     <string name="node_sort_channel">Канал</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Служебные уведомления</string>
     <string name="about">О приложении</string>
     <string name="channel_invalid">Этот URL-адрес канала недействителен и не может быть использован</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">Панель отладки</string>
     <string name="debug_decoded_payload">Декодированная нагрузка:</string>
     <string name="debug_logs_export">Экспортировать логи</string>
@@ -327,9 +330,9 @@
     <string name="air_util_definition">Процент времени эфира для передачи в течение последнего часа.</string>
     <string name="iaq">Относительное качество воздуха в помещении</string>
     <string name="encryption_psk">Общедоступный ключ</string>
-    <string name="encryption_psk_text">Прямые сообщения используют общий ключ для канала.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Общий ключ шифрования</string>
-    <string name="encryption_pkc_text">Прямые сообщения используют новую инфраструктуру публичных ключей для шифрования. Требуется прошивка версии 2.5 или выше.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Несоответствие публичного ключа</string>
     <string name="encryption_error_text">Открытый ключ не соответствует записанному ключу. Вы можете удалить узел и снова обменяться ключами, но это может повлечь за собой более серьезную проблему безопасности. Свяжитесь с пользователем через другой доверенный канал, чтобы определить, было ли изменение ключа из-за заводского сброса или другого преднамеренного действия.</string>
     <string name="exchange_userinfo">Обменять информацию пользователя</string>
@@ -788,7 +791,8 @@
     <string name="no_pax_metrics_logs">Нет доступных журналов метрики пассажиров.</string>
     <string name="wifi_devices">WiFi устройства</string>
     <string name="ble_devices">Устройства BLE</string>
-    <string name="bluetooth_paired_devices">Сопряженные устройства</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Подключённые устройства</string>
     <string name="routing_error_rate_limit_exceeded">Превышен лимит запросов. Пожалуйста, повторите попытку позже.</string>
     <string name="view_release">Просмотреть релиз</string>
@@ -888,4 +892,7 @@
     <string name="two_days">48 часов</string>
     <string name="last_heard_filter_label">Фильтр по времени последнего сообщения: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

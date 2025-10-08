@@ -34,6 +34,7 @@
 
 plugins {
     alias(libs.plugins.meshtastic.android.library)
+    alias(libs.plugins.meshtastic.android.library.compose)
     alias(libs.plugins.protobuf)
 }
 
@@ -41,7 +42,7 @@ android { namespace = "org.meshtastic.core.proto" }
 
 // per protobuf-gradle-plugin docs, this is recommended for android
 protobuf {
-    protoc { artifact = libs.protoc.get().toString() }
+    protoc { artifact = libs.protobuf.protoc.get().toString() }
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
@@ -53,6 +54,8 @@ protobuf {
 }
 
 dependencies {
+    implementation(projects.core.strings)
+
     // This needs to be API for consuming modules
     api(libs.protobuf.kotlin)
 }

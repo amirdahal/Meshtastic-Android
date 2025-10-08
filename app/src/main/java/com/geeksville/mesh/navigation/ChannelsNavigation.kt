@@ -24,24 +24,24 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import androidx.navigation.navigation
-import com.geeksville.mesh.model.UIViewModel
-import com.geeksville.mesh.ui.settings.radio.components.ChannelConfigScreen
-import com.geeksville.mesh.ui.settings.radio.components.LoRaConfigScreen
 import com.geeksville.mesh.ui.sharing.ChannelScreen
 import org.meshtastic.core.navigation.ChannelsRoutes
 import org.meshtastic.core.navigation.DEEP_LINK_BASE_URI
+import org.meshtastic.feature.settings.navigation.ConfigRoute
+import org.meshtastic.feature.settings.radio.component.ChannelConfigScreen
+import org.meshtastic.feature.settings.radio.component.LoRaConfigScreen
 
 /** Navigation graph for for the top level ChannelScreen - [ChannelsRoutes.Channels]. */
-fun NavGraphBuilder.channelsGraph(navController: NavHostController, uiViewModel: UIViewModel) {
+fun NavGraphBuilder.channelsGraph(navController: NavHostController) {
     navigation<ChannelsRoutes.ChannelsGraph>(startDestination = ChannelsRoutes.Channels) {
         composable<ChannelsRoutes.Channels>(
             deepLinks = listOf(navDeepLink<ChannelsRoutes.Channels>(basePath = "$DEEP_LINK_BASE_URI/channels")),
         ) { backStackEntry ->
             val parentEntry = remember(backStackEntry) { navController.getBackStackEntry(ChannelsRoutes.ChannelsGraph) }
             ChannelScreen(
-                viewModel = uiViewModel,
                 radioConfigViewModel = hiltViewModel(parentEntry),
                 onNavigate = { route -> navController.navigate(route) },
+                onNavigateUp = { navController.navigateUp() },
             )
         }
         configRoutes(navController)

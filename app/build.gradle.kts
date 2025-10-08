@@ -27,7 +27,6 @@ plugins {
     alias(libs.plugins.meshtastic.android.application.compose)
     alias(libs.plugins.meshtastic.hilt)
     alias(libs.plugins.kotlin.parcelize)
-    alias(libs.plugins.meshtastic.kotlinx.serialization)
     alias(libs.plugins.devtools.ksp)
     alias(libs.plugins.secrets)
     alias(libs.plugins.dokka)
@@ -141,6 +140,13 @@ android {
     // Configure existing product flavors (defined by convention plugin)
     // with their dynamic version names.
     productFlavors {
+        all {
+            if (name == "google") {
+                apply(plugin = libs.plugins.google.services.get().pluginId)
+                apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
+            }
+        }
+
         named("google") { versionName = "${defaultConfig.versionName} (${defaultConfig.versionCode}) google" }
         named("fdroid") { versionName = "${defaultConfig.versionName} (${defaultConfig.versionCode}) fdroid" }
     }
@@ -152,10 +158,13 @@ android {
             } else {
                 signingConfig = signingConfigs.getByName("debug")
             }
+            productFlavors.getByName("fdroid") {
+                isMinifyEnabled = false
+                isShrinkResources = false
+            }
         }
     }
     bundle { language { enableSplit = false } }
-    buildFeatures { aidl = true }
 }
 
 secrets {
@@ -180,6 +189,8 @@ androidComponents {
 project.afterEvaluate { logger.lifecycle("Version code is set to: ${android.defaultConfig.versionCode}") }
 
 dependencies {
+    implementation(projects.core.analytics)
+    implementation(projects.core.common)
     implementation(projects.core.data)
     implementation(projects.core.database)
     implementation(projects.core.datastore)
@@ -189,34 +200,67 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.prefs)
     implementation(projects.core.proto)
+    implementation(projects.core.service)
     implementation(projects.core.strings)
     implementation(projects.core.ui)
+    implementation(projects.feature.intro)
     implementation(projects.feature.map)
+    implementation(projects.feature.node)
+    implementation(projects.feature.settings)
 
-    // Bundles
-    implementation(libs.bundles.markdown)
-    implementation(libs.bundles.coroutines)
-    implementation(libs.bundles.datastore)
-    implementation(libs.bundles.coil)
-
-    // ZXing
+    implementation(libs.androidx.compose.material3.adaptive)
+    implementation(libs.androidx.compose.material3.navigationSuite)
+    implementation(libs.material)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.iconsExtended)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.process)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.coil.svg)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
-
-    // Individual dependencies (flavor-specific ones removed)
-    implementation(libs.core.splashscreen)
-    implementation(libs.emoji2.emojipicker)
-    implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.org.eclipse.paho.client.mqttv3)
     implementation(libs.streamsupport.minifuture)
     implementation(libs.usb.serial.android)
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.core.location.altitude)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.accompanist.permissions)
     implementation(libs.timber)
 
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    googleImplementation(libs.location.services)
+
+    fdroidImplementation(libs.osmdroid.android)
+    fdroidImplementation(libs.osmdroid.geopackage) { exclude(group = "com.j256.ormlite") }
+
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.hilt.android.testing)
+
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.junit)
+
     dokkaPlugin(libs.dokka.android.documentation.plugin)
+}
+
+val googleServiceKeywords = listOf("crashlytics", "google", "datadog")
+
+tasks.configureEach {
+    if (
+        googleServiceKeywords.any { name.contains(it, ignoreCase = true) } && name.contains("fdroid", ignoreCase = true)
+    ) {
+        project.logger.lifecycle("Disabling task for F-Droid: $name")
+        enabled = false
+    }
 }
 
 dokka {

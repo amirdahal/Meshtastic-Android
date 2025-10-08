@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Филтър</string>
     <string name="desc_node_filter_clear">изчистване на филтъра за възли</string>
+    <string name="node_filter_title">Филтриране по</string>
     <string name="node_filter_include_unknown">Включително неизвестните</string>
     <string name="node_filter_only_online">Скриване на офлайн възлите</string>
     <string name="node_filter_only_direct">Показване само на директни възли</string>
     <string name="node_filter_ignored">Преглеждате игнорирани възли.\nНатиснете, за да се върнете към списъка с възли.</string>
     <string name="node_filter_show_details">Показване на детайли</string>
+    <string name="node_sort_title">Сортиране по</string>
     <string name="node_sort_button">Опции за сортиране на възлите</string>
     <string name="node_sort_alpha">А-Я</string>
     <string name="node_sort_channel">Канал</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Сервизни известия</string>
     <string name="about">Относно</string>
     <string name="channel_invalid">URL адресът на този канал е невалиден и не може да се използва</string>
+    <string name="contact_invalid">Този контакт е невалиден и не може да бъде добавен</string>
     <string name="debug_panel">Панел за отстраняване на грешки</string>
     <string name="debug_decoded_payload">Decoded Payload:</string>
     <string name="debug_logs_export">Експортиране на журнали</string>
@@ -270,7 +273,7 @@
     <string name="delivery_confirmed">Съобщението е доставено</string>
     <string name="error">Грешка</string>
     <string name="ignore">Игнорирай</string>
-    <string name="remove_ignored">Remove from ignored</string>
+    <string name="remove_ignored">Премахване от игнорирани</string>
     <string name="ignore_add">Добави \'%s\' към списъка с игнорирани?</string>
     <string name="ignore_remove">Изтрий \'%s\' от списъка с игнорирани?</string>
     <string name="map_select_download_region">Избор на регион за сваляне</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Процент от ефирното време за предаване, използвано през последния час.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Споделен ключ</string>
-    <string name="encryption_psk_text">Директните съобщения използват споделения ключ за канала.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Криптиране с публичния ключ</string>
-    <string name="encryption_pkc_text">Директните съобщения използват новата инфраструктура с публичен ключ за криптиране. Изисква се фърмуер версия 2.5 или по-нова.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Несъответствие на публичния ключ</string>
     <string name="encryption_error_text">Публичният ключ не съвпада със записания ключ. Можете да премахнете възела и да го оставите да обмени ключове отново, но това може да означава по-сериозен проблем със сигурността. Свържете се с потребителя чрез друг надежден канал, за да определите дали промяната на ключа се дължи на фабрично нулиране или друго умишлено действие.</string>
     <string name="exchange_userinfo">Обмяна на потребителска информация</string>
@@ -371,8 +374,8 @@
     <string name="alert_bell_text">Alert Bell Character!</string>
     <string name="critical_alert">Критичен сигнал!</string>
     <string name="favorite">Любим</string>
-    <string name="add_favorite">Add to favorites</string>
-    <string name="remove_favorite">Remove from favorites</string>
+    <string name="add_favorite">Добавяне към любими</string>
+    <string name="remove_favorite">Премахване от любими</string>
     <string name="favorite_add">Добавяне на \'%s\' като любим възел?</string>
     <string name="favorite_remove">Премахване на \'%s\' като любим възел?</string>
     <string name="power_metrics_log">Журнал на показателите на захранването</string>
@@ -726,8 +729,8 @@
     <string name="regenerate_keys_confirmation">Сигурни ли сте, че искате да генерирате отново своя частен ключ?\n\nВъзлите, които може да са обменяли преди това ключове с възела, ще трябва да го премахнат и да обменят отново ключове, за да възобновят защитената комуникация.</string>
     <string name="export_keys">Експортиране на ключовете</string>
     <string name="export_keys_confirmation">Експортира публичния и частния ключове във файл. Моля, съхранявайте го на сигурно място.</string>
-    <string name="modules_unlocked">Modules unlocked</string>
-    <string name="modules_already_unlocked">Modules already unlocked</string>
+    <string name="modules_unlocked">Модулите са отключени</string>
+    <string name="modules_already_unlocked">Модулите вече са отключени</string>
     <string name="remote">Отдалечен</string>
     <string name="node_count_template">(%1$d онлайн / %2$d общо)</string>
     <string name="react">React</string>
@@ -740,8 +743,8 @@
     <string name="meshtastic">Meshtastic</string>
     <string name="scanning">Сканиране</string>
     <string name="security_icon_description">Състояние на сигурността</string>
-    <string name="security_icon_secure">Secure</string>
-    <string name="security_icon_badge_warning_description">Warning Badge</string>
+    <string name="security_icon_secure">Сигурно</string>
+    <string name="security_icon_badge_warning_description">Предупредителна значка</string>
     <string name="unknown_channel">Неизвестен канал</string>
     <string name="warning">Предупреждение</string>
     <string name="overflow_menu">Overflow menu</string>
@@ -785,6 +788,7 @@
     <string name="wifi_devices">WiFi устройства</string>
     <string name="ble_devices">BLE устройства</string>
     <string name="bluetooth_paired_devices">Сдвоени устройства</string>
+    <string name="bluetooth_available_devices">Налични устройства</string>
     <string name="connected_device">Свързано устройство</string>
     <string name="routing_error_rate_limit_exceeded">Rate Limit Exceeded. Please try again later.</string>
     <string name="view_release">Преглед на изданието</string>
@@ -814,7 +818,7 @@
     <string name="critical_alerts_description">Избраните пакети, изпратени като критични, ще игнорират превключвателя за изключване на звука и настройките \"Не безпокойте\" в центъра за известия на операционната система.</string>
     <string name="configure_notification_permissions">Конфигуриране на разрешенията за известия</string>
     <string name="phone_location">Местоположение на телефона</string>
-    <string name="phone_location_description">Meshtastic uses your phone\'s location to enable a number of features. You can update your location permissions at any time from settings.</string>
+    <string name="phone_location_description">Meshtastic използва местоположението на телефона ви, за да активира редица функции. Можете да актуализирате разрешенията си за местоположение по всяко време от настройките.</string>
     <string name="share_location">Споделяне на местоположение</string>
     <string name="share_location_description">Използвайте GPS на телефона си, за да изпращате местоположения до вашия възел, вместо да използвате хардуеренния GPS на вашия възел.</string>
     <string name="distance_measurements">Измервания на разстояния</string>
@@ -859,7 +863,7 @@
     <string name="edit_custom_tile_source">Edit Custom Tile Source</string>
     <string name="delete_custom_tile_source">Delete Custom Tile Source</string>
     <string name="name_cannot_be_empty">Името не може да бъде празно.</string>
-    <string name="provider_name_exists">Provider name exists.</string>
+    <string name="provider_name_exists">Името на доставчика съществува.</string>
     <string name="url_cannot_be_empty">URL не може да бъде празен.</string>
     <string name="url_must_contain_placeholders">URL must contain placeholders.</string>
     <string name="url_template">Шаблон за URL</string>
@@ -872,7 +876,7 @@
     <string name="uplink_feature_description">Съобщенията от mesh мрежата ще бъдат изпращани до публичния интернет през конфигурирания шлюз на всеки възел.</string>
     <string name="downlink_feature_description">Съобщенията от шлюза към публичния интернет се препращат към локалната mesh мрежа. Поради политиката за нулев отскок, трафикът от MQTT сървъра по подразбиране няма да се разпространява по-далеч от това устройство.</string>
     <string name="icon_meanings">Icon Meanings</string>
-    <string name="secondary_channel_position_feature">Disabling position on the primary channel allows periodic position broadcasts on the first secondary channel with the position enabled, otherwise manual position request required.</string>
+    <string name="secondary_channel_position_feature">Деактивирането на позицията на първичния канал позволява периодично излъчване на позиция на първия вторичен канал с активирана позиция, в противен случай е необходимо ръчно заявяване на позиция.</string>
     <string name="device_configuration">Конфигурация на устройството</string>
     <string name="remotely_administrating">"[Remote] %1$s"</string>
     <string name="device_telemetry_enabled">Send Device Telemetry</string>
@@ -884,4 +888,7 @@
     <string name="two_days">48 часа</string>
     <string name="last_heard_filter_label">Филтриране по време на последното чуване: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">Няма налично приложение за обработка на връзката.</string>
+    <string name="system_settings">Системни настройки</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

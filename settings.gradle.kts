@@ -1,5 +1,3 @@
-import org.gradle.kotlin.dsl.maven
-
 /*
  * Copyright (c) 2025 Meshtastic LLC
  *
@@ -19,6 +17,8 @@ import org.gradle.kotlin.dsl.maven
 
 include(
     ":app",
+    ":core:analytics",
+    ":core:common",
     ":core:data",
     ":core:database",
     ":core:datastore",
@@ -28,9 +28,13 @@ include(
     ":core:network",
     ":core:prefs",
     ":core:proto",
+    ":core:service",
     ":core:strings",
     ":core:ui",
+    ":feature:intro",
     ":feature:map",
+    ":feature:node",
+    ":feature:settings",
     ":mesh_service_example",
 )
 rootProject.name = "MeshtasticAndroid"
@@ -60,7 +64,7 @@ dependencyResolutionManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver") version "1.0.0"
-    id("com.gradle.develocity") version("4.2")
+    id("com.gradle.develocity") version("4.2.1")
     id("com.gradle.common-custom-user-data-gradle-plugin") version "2.4.0"
 }
 

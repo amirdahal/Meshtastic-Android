@@ -33,8 +33,14 @@ android {
 dependencies {
     implementation(projects.core.proto)
     implementation(projects.core.strings)
-    implementation(libs.annotation)
+
+    implementation(libs.androidx.annotation)
     implementation(libs.timber)
     implementation(libs.zxing.android.embedded) { isTransitive = false }
     implementation(libs.zxing.core)
+
+    testImplementation(libs.androidx.core.ktx)
+    testImplementation(libs.junit)
+
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

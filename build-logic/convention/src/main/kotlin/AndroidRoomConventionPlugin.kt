@@ -43,10 +43,9 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
             }
 
             dependencies {
-                "implementation"(libs.findLibrary("room.runtime").get())
-                "implementation"(libs.findLibrary("room.ktx").get())
-                "ksp"(libs.findLibrary("room.compiler").get())
-                "androidTestImplementation"(libs.findBundle("testing.room").get())
+                "implementation"(libs.findLibrary("androidx.room.runtime").get())
+                "ksp"(libs.findLibrary("androidx.room.compiler").get())
+                "androidTestImplementation"(libs.findLibrary("androidx-room-testing").get())
             }
         }
     }

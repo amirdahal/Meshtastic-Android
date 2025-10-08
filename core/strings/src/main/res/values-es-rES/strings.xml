@@ -19,11 +19,13 @@
     <string name="fallback_node_name">(No se ha podido obtener el nombre) Meshtastic %s</string>
     <string name="node_filter_placeholder">Filtro</string>
     <string name="desc_node_filter_clear">quitar filtro de nodo</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">Incluir desconocidos</string>
     <string name="node_filter_only_online">Ocultar nodos desconectados</string>
     <string name="node_filter_only_direct">Mostrar sólo nodos directos</string>
     <string name="node_filter_ignored">Estás viendo nodos ignorados, Prensa para volver a la lista de nodos.</string>
     <string name="node_filter_show_details">Mostrar detalles</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">Opciones de orden de Nodos</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">Canal</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Notificaciones de servicio</string>
     <string name="about">Acerca de</string>
     <string name="channel_invalid">La URL de este canal no es válida y no puede utilizarse</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">Panel de depuración</string>
     <string name="debug_decoded_payload">Decoded Payload:</string>
     <string name="debug_logs_export">Exportar registros</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Porcentaje de tiempo de transmisión utilizado en la última hora.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Clave compartida</string>
-    <string name="encryption_psk_text">Los mensajes directos están usando la clave compartida para el canal.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Cifrado de Clave Pública</string>
-    <string name="encryption_pkc_text">Los Mensajes Directos Utilizan la nueva contraseña Pública de encriptación. (Se Necesita la Versión 2.5 o Posterior del Software).</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Clave pública no coincide</string>
     <string name="encryption_error_text">La clave pública no coincide con la clave guardada. Puedes eliminar el nodo y dejar que intercambie claves otra vez, esto podría indicar un problema de seguridad más serio. Contacta al usuario a través de otro canal confiable para saber si el cambio la de clave es por un restablecimiento de fábrica u otra acción intencional.</string>
     <string name="exchange_userinfo">Intercambiar información de usuario</string>
@@ -786,7 +789,8 @@ Estos datos de ubicación pueden ser utilizados para fines como aparecer en un m
     <string name="no_pax_metrics_logs">No PAX metrics logs available.</string>
     <string name="wifi_devices">WiFi Devices</string>
     <string name="ble_devices">BLE Devices</string>
-    <string name="bluetooth_paired_devices">Paired Devices</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Connected Device</string>
     <string name="routing_error_rate_limit_exceeded">Rate Limit Exceeded. Please try again later.</string>
     <string name="view_release">View Release</string>
@@ -886,4 +890,7 @@ Estos datos de ubicación pueden ser utilizados para fines como aparecer en un m
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

@@ -18,6 +18,7 @@
 package com.geeksville.mesh.repository.radio
 
 import android.app.Application
+import android.provider.Settings
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.coroutineScope
 import com.geeksville.mesh.BuildConfig
@@ -25,12 +26,9 @@ import com.geeksville.mesh.CoroutineDispatchers
 import com.geeksville.mesh.MeshProtos
 import com.geeksville.mesh.android.BinaryLogFile
 import com.geeksville.mesh.android.BuildUtils
-import com.geeksville.mesh.android.GeeksvilleApplication
-import com.geeksville.mesh.android.Logging
 import com.geeksville.mesh.concurrent.handledLaunch
 import com.geeksville.mesh.repository.bluetooth.BluetoothRepository
 import com.geeksville.mesh.repository.network.NetworkRepository
-import com.geeksville.mesh.service.ConnectionState
 import com.geeksville.mesh.util.ignoreException
 import com.geeksville.mesh.util.toRemoteExceptions
 import kotlinx.coroutines.CoroutineScope
@@ -47,8 +45,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import org.meshtastic.core.analytics.platform.PlatformAnalytics
 import org.meshtastic.core.model.util.anonymize
 import org.meshtastic.core.prefs.radio.RadioPrefs
+import org.meshtastic.core.service.ConnectionState
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -73,7 +74,8 @@ constructor(
     private val processLifecycle: Lifecycle,
     private val radioPrefs: RadioPrefs,
     private val interfaceFactory: InterfaceFactory,
-) : Logging {
+    private val analytics: PlatformAnalytics,
+) {
 
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -131,17 +133,22 @@ constructor(
     }
 
     companion object {
-        private const val HEARTBEAT_INTERVAL_MILLIS = 5 * 60 * 1000L
+        private const val HEARTBEAT_INTERVAL_MILLIS = 30 * 1000L
     }
 
     private var lastHeartbeatMillis = 0L
 
     fun keepAlive(now: Long = System.currentTimeMillis()) {
         if (now - lastHeartbeatMillis > HEARTBEAT_INTERVAL_MILLIS) {
-            info("Sending ToRadio heartbeat")
-            val heartbeat =
-                MeshProtos.ToRadio.newBuilder().setHeartbeat(MeshProtos.Heartbeat.getDefaultInstance()).build()
-            handleSendToRadio(heartbeat.toByteArray())
+            if (radioIf is SerialInterface) {
+                Timber.i("Sending ToRadio heartbeat")
+                val heartbeat =
+                    MeshProtos.ToRadio.newBuilder().setHeartbeat(MeshProtos.Heartbeat.getDefaultInstance()).build()
+                handleSendToRadio(heartbeat.toByteArray())
+            } else {
+                // For BLE and TCP this will check if the connection is still alive
+                radioIf.keepAlive()
+            }
             lastHeartbeatMillis = now
         }
     }
@@ -150,7 +157,8 @@ constructor(
     fun toInterfaceAddress(interfaceId: InterfaceId, rest: String): String =
         interfaceFactory.toInterfaceAddress(interfaceId, rest)
 
-    fun isMockInterface(): Boolean = BuildConfig.DEBUG || (context as GeeksvilleApplication).isInTestLab
+    fun isMockInterface(): Boolean =
+        BuildConfig.DEBUG || Settings.System.getString(context.contentResolver, "firebase.test.lab") == "true"
 
     /**
      * Determines whether to default to mock interface for device address. This keeps the decision logic separate and
@@ -198,7 +206,7 @@ constructor(
     }
 
     private fun broadcastConnectionChanged(newState: ConnectionState) {
-        debug("Broadcasting connection state change to $newState")
+        Timber.d("Broadcasting connection state change to $newState")
         processLifecycle.coroutineScope.launch(dispatchers.default) { _connectionState.emit(newState) }
     }
 
@@ -219,7 +227,7 @@ constructor(
             keepAlive(System.currentTimeMillis())
         }
 
-        // ignoreException { debug("FromRadio: ${MeshProtos.FromRadio.parseFrom(p)}") }
+        // ignoreException { Timber.d("FromRadio: ${MeshProtos.FromRadio.parseFrom(p)}") }
 
         processLifecycle.coroutineScope.launch(dispatchers.io) { _receivedData.emit(p) }
         emitReceiveActivity()
@@ -241,13 +249,13 @@ constructor(
     /** Start our configured interface (if it isn't already running) */
     private fun startInterface() {
         if (radioIf !is NopInterface) {
-            warn("Can't start interface - $radioIf is already running")
+            Timber.w("Can't start interface - $radioIf is already running")
         } else {
             val address = getBondedDeviceAddress()
             if (address == null) {
-                warn("No bonded mesh radio, can't start interface")
+                Timber.w("No bonded mesh radio, can't start interface")
             } else {
-                info("Starting radio ${address.anonymize}")
+                Timber.i("Starting radio ${address.anonymize}")
                 isStarted = true
 
                 if (logSends) {
@@ -271,7 +279,7 @@ constructor(
 
     private fun stopInterface() {
         val r = radioIf
-        info("stopping interface $r")
+        Timber.i("stopping interface $r")
         isStarted = false
         radioIf = interfaceFactory.nopInterface
         r.close()
@@ -301,18 +309,18 @@ constructor(
      */
     private fun setBondedDeviceAddress(address: String?): Boolean =
         if (getBondedDeviceAddress() == address && isStarted) {
-            warn("Ignoring setBondedDevice ${address.anonymize}, because we are already using that device")
+            Timber.w("Ignoring setBondedDevice ${address.anonymize}, because we are already using that device")
             false
         } else {
             // Record that this use has configured a new radio
-            GeeksvilleApplication.analytics.track("mesh_bond")
+            analytics.track("mesh_bond")
 
             // Ignore any errors that happen while closing old device
             ignoreException { stopInterface() }
 
             // The device address "n" can be used to mean none
 
-            debug("Setting bonded device to ${address.anonymize}")
+            Timber.d("Setting bonded device to ${address.anonymize}")
 
             // Stores the address if non-null, otherwise removes the pref
             radioPrefs.devAddr = address
@@ -353,14 +361,14 @@ constructor(
         // Use tryEmit for SharedFlow as it's non-blocking
         val emitted = _meshActivity.tryEmit(MeshActivity.Send)
         if (!emitted) {
-            debug("MeshActivity.Send event was not emitted due to buffer overflow or no collectors")
+            Timber.d("MeshActivity.Send event was not emitted due to buffer overflow or no collectors")
         }
     }
 
     private fun emitReceiveActivity() {
         val emitted = _meshActivity.tryEmit(MeshActivity.Receive)
         if (!emitted) {
-            debug("MeshActivity.Receive event was not emitted due to buffer overflow or no collectors")
+            Timber.d("MeshActivity.Receive event was not emitted due to buffer overflow or no collectors")
         }
     }
 }

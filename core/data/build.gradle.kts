@@ -25,6 +25,7 @@ plugins {
 android { namespace = "org.meshtastic.core.data" }
 
 dependencies {
+    implementation(projects.core.analytics)
     implementation(projects.core.database)
     implementation(projects.core.datastore)
     implementation(projects.core.di)
@@ -33,7 +34,7 @@ dependencies {
     implementation(projects.core.prefs)
     implementation(projects.core.proto)
 
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.core.location.altitude)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.timber)
 }

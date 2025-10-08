@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">필터</string>
     <string name="desc_node_filter_clear">노드 필터 지우기</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">미확인 노드 포함</string>
     <string name="node_filter_only_online">오프라인 노드 숨기기</string>
     <string name="node_filter_only_direct">직접 연결된 노드만 보기</string>
     <string name="node_filter_ignored">You are viewing ignored nodes,\nPress to return to the node list.</string>
     <string name="node_filter_show_details">자세히 보기</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">노드 정렬</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">채널</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">서비스 알림</string>
     <string name="about">앱에 대하여</string>
     <string name="channel_invalid">이 채널 URL은 유효하지 않으며 사용할 수 없습니다.</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">디버그 패널</string>
     <string name="debug_decoded_payload">Decoded Payload:</string>
     <string name="debug_logs_export">로그 내보내기</string>
@@ -324,9 +327,9 @@
     <string name="air_util_definition">지난 1시간 동안 전송에 사용된 통신 시간의 백분율.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">공유 키</string>
-    <string name="encryption_psk_text">다이렉트 메시지는 채널의 공유 키를 사용합니다.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">공개 키 암호화</string>
-    <string name="encryption_pkc_text">다이렉트 메시지는 새로운 공개 키 인프라를 사용해 암호화합니다. 펌웨어 버전 2.5 이상이 필요합니다.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">공개 키가 일치하지 않습니다</string>
     <string name="encryption_error_text">공개 키가 기록된 키와 일치하지 않습니다. 노드를 제거하고 키를 다시 교환할 수 있지만 이는 더 심각한 보안 문제를 나타낼 수 있습니다. 다른 신뢰할 수 있는 채널을 통해 사용자에게 연락하여 키 변경이 공장 초기화 또는 기타 의도적인 작업 때문인지 확인하세요.</string>
     <string name="exchange_userinfo">유저 정보 교환</string>
@@ -782,7 +785,8 @@
     <string name="no_pax_metrics_logs">No PAX metrics logs available.</string>
     <string name="wifi_devices">WiFi Devices</string>
     <string name="ble_devices">BLE Devices</string>
-    <string name="bluetooth_paired_devices">Paired Devices</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Connected Device</string>
     <string name="routing_error_rate_limit_exceeded">Rate Limit Exceeded. Please try again later.</string>
     <string name="view_release">View Release</string>
@@ -882,4 +886,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

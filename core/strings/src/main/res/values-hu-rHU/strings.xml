@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Filter</string>
     <string name="desc_node_filter_clear">állomás filter törlése</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">Ismeretlent tartalmaz</string>
     <string name="node_filter_only_online">Offline csomópontok elrejtése</string>
     <string name="node_filter_only_direct">Csak közvetlen csomópontok megjelenítése</string>
     <string name="node_filter_ignored">Figyelmen kívül hagyott csomópontokat nézed,\nnyomd meg a gombot a listához való visszatéréshez.</string>
     <string name="node_filter_show_details">Részletek megjelenítése</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">Csomópont-rendezési beállítások</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">Csatorna</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Szolgáltatás értesítések</string>
     <string name="about">A programról</string>
     <string name="channel_invalid">Ez a csatorna URL érvénytelen, ezért nem használható.</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">Hibakereső panel</string>
     <string name="debug_decoded_payload">Dekódolt adat:</string>
     <string name="debug_logs_export">Naplók exportálása</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Az elmúlt órában az adásra használt adásidő százaléka.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Megosztott kulcs</string>
-    <string name="encryption_psk_text">A közvetlen üzenetek a csatorna megosztott kulcsát használják.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Publikus Kulcs Titkosítás</string>
-    <string name="encryption_pkc_text">A közvetlen üzenetek az új nyilvános kulcs-infrastruktúrát használják titkosításhoz. Firmware 2.5 vagy újabb szükséges.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Publikus kulcs nem egyezik</string>
     <string name="encryption_error_text">A nyilvános kulcs nem egyezik a rögzített kulccsal. Eltávolíthatod a csomópontot, hogy újra kulcsot cseréljen, de ez komolyabb biztonsági problémát jelezhet. Lépj kapcsolatba a felhasználóval egy megbízható csatornán, hogy kiderítsd, a kulcscsere gyári visszaállítás vagy más szándékos művelet miatt történt-e.</string>
     <string name="exchange_userinfo">Felhasználói adatok cseréje</string>
@@ -784,7 +787,8 @@
     <string name="no_pax_metrics_logs">Nem érhetők el PAX metrika naplók.</string>
     <string name="wifi_devices">WiFi eszközök</string>
     <string name="ble_devices">BLE eszközök</string>
-    <string name="bluetooth_paired_devices">Párosított eszközök</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Csatlakoztatott eszköz</string>
     <string name="routing_error_rate_limit_exceeded">Túllépted a sebességkorlátot. Próbáld újra később.</string>
     <string name="view_release">Kiadás megtekintése</string>
@@ -881,4 +885,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

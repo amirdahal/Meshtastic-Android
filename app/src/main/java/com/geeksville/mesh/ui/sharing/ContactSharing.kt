@@ -30,9 +30,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.twotone.QrCodeScanner
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,8 +46,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.geeksville.mesh.AdminProtos
 import com.geeksville.mesh.MeshProtos
-import com.geeksville.mesh.android.BuildUtils.debug
-import com.geeksville.mesh.android.BuildUtils.errormsg
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -74,17 +70,14 @@ import java.net.MalformedURLException
  * requests using Accompanist Permissions.
  *
  * @param modifier Modifier for this composable.
- * @param onSharedContactImport Callback invoked when a shared contact is successfully imported.
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun AddContactFAB(
-    unfilteredNodes: List<Node>,
-    scannedContact: AdminProtos.SharedContact?,
+    sharedContact: AdminProtos.SharedContact?,
     modifier: Modifier = Modifier,
-    onSharedContactImport: (AdminProtos.SharedContact) -> Unit = {},
-    onSharedContactRequested: (AdminProtos.SharedContact?) -> Unit = {},
+    onSharedContactRequested: (AdminProtos.SharedContact?) -> Unit,
 ) {
     val barcodeLauncher =
         rememberLauncherForActivityResult(ScanContract()) { result ->
@@ -94,7 +87,7 @@ fun AddContactFAB(
                     try {
                         uri.toSharedContact()
                     } catch (ex: MalformedURLException) {
-                        errormsg("URL was malformed: ${ex.message}")
+                        Timber.e("URL was malformed: ${ex.message}")
                         null
                     }
                 if (sharedContact != null) {
@@ -103,40 +96,10 @@ fun AddContactFAB(
             }
         }
 
-    scannedContact?.let { contactToImport ->
-        val nodeNum = contactToImport.nodeNum
-        val node = unfilteredNodes.find { it.num == nodeNum }
-        SimpleAlertDialog(
-            title = R.string.import_shared_contact,
-            text = {
-                Column {
-                    if (node != null) {
-                        Text(text = stringResource(R.string.import_known_shared_contact_text))
-                        if (node.user.publicKey.size() > 0 && node.user.publicKey != contactToImport.user?.publicKey) {
-                            Text(
-                                text = stringResource(R.string.public_key_changed),
-                                color = MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        HorizontalDivider()
-                        Text(text = compareUsers(node.user, contactToImport.user))
-                    } else {
-                        Text(text = userFieldsToString(contactToImport.user))
-                    }
-                }
-            },
-            dismissText = stringResource(R.string.cancel),
-            onDismiss = { onSharedContactRequested(null) },
-            confirmText = stringResource(R.string.import_label),
-            onConfirm = {
-                onSharedContactImport(contactToImport)
-                onSharedContactRequested(null)
-            },
-        )
-    }
+    sharedContact?.let { SharedContactDialog(sharedContact = it, onDismiss = { onSharedContactRequested(null) }) }
 
     fun zxingScan() {
-        debug("Starting zxing QR code scanner")
+        Timber.d("Starting zxing QR code scanner")
         val zxingScan = ScanOptions()
         zxingScan.setCameraId(CAMERA_ID)
         zxingScan.setPrompt("")
@@ -229,7 +192,7 @@ val Uri.qrCode: Bitmap?
             val barcodeEncoder = BarcodeEncoder()
             barcodeEncoder.createBitmap(bitMatrix)
         } catch (ex: WriterException) {
-            errormsg("URL was too complex to render as barcode: ${ex.message}")
+            Timber.e("URL was too complex to render as barcode: ${ex.message}")
             null
         }
 

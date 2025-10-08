@@ -40,7 +40,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import androidx.navigation.navDeepLink
 import com.geeksville.mesh.model.MetricsViewModel
-import com.geeksville.mesh.model.UIViewModel
 import com.geeksville.mesh.ui.metrics.DeviceMetricsScreen
 import com.geeksville.mesh.ui.metrics.EnvironmentMetricsScreen
 import com.geeksville.mesh.ui.metrics.HostMetricsLogScreen
@@ -50,28 +49,29 @@ import com.geeksville.mesh.ui.metrics.PowerMetricsScreen
 import com.geeksville.mesh.ui.metrics.SignalMetricsScreen
 import com.geeksville.mesh.ui.metrics.TracerouteLogScreen
 import com.geeksville.mesh.ui.node.NodeDetailScreen
+import com.geeksville.mesh.ui.node.NodeListScreen
 import com.geeksville.mesh.ui.node.NodeMapScreen
-import com.geeksville.mesh.ui.node.NodeScreen
 import org.meshtastic.core.navigation.ContactsRoutes
 import org.meshtastic.core.navigation.DEEP_LINK_BASE_URI
 import org.meshtastic.core.navigation.NodeDetailRoutes
 import org.meshtastic.core.navigation.NodesRoutes
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.strings.R
+import org.meshtastic.feature.map.node.NodeMapViewModel
 
-fun NavGraphBuilder.nodesGraph(navController: NavHostController, uiViewModel: UIViewModel) {
+fun NavGraphBuilder.nodesGraph(navController: NavHostController) {
     navigation<NodesRoutes.NodesGraph>(startDestination = NodesRoutes.Nodes) {
         composable<NodesRoutes.Nodes>(
             deepLinks = listOf(navDeepLink<NodesRoutes.Nodes>(basePath = "$DEEP_LINK_BASE_URI/nodes")),
         ) {
-            NodeScreen(navigateToNodeDetails = { navController.navigate(NodesRoutes.NodeDetailGraph(it)) })
+            NodeListScreen(navigateToNodeDetails = { navController.navigate(NodesRoutes.NodeDetailGraph(it)) })
         }
-        nodeDetailGraph(navController, uiViewModel)
+        nodeDetailGraph(navController)
     }
 }
 
 @Suppress("LongMethod")
-fun NavGraphBuilder.nodeDetailGraph(navController: NavHostController, uiViewModel: UIViewModel) {
+fun NavGraphBuilder.nodeDetailGraph(navController: NavHostController) {
     navigation<NodesRoutes.NodeDetailGraph>(startDestination = NodesRoutes.NodeDetail()) {
         composable<NodesRoutes.NodeDetail>(
             deepLinks =
@@ -91,68 +91,68 @@ fun NavGraphBuilder.nodeDetailGraph(navController: NavHostController, uiViewMode
             )
         }
 
+        composable<NodeDetailRoutes.NodeMap>(
+            deepLinks =
+            listOf(
+                navDeepLink<NodeDetailRoutes.NodeMap>(basePath = "$DEEP_LINK_BASE_URI/node/{destNum}/node_map"),
+                navDeepLink<NodeDetailRoutes.NodeMap>(basePath = "$DEEP_LINK_BASE_URI/node/node_map"),
+            ),
+        ) { backStackEntry ->
+            val parentGraphBackStackEntry =
+                remember(backStackEntry) { navController.getBackStackEntry(NodesRoutes.NodeDetailGraph::class) }
+            NodeMapScreen(
+                hiltViewModel<NodeMapViewModel>(parentGraphBackStackEntry),
+                onNavigateUp = navController::navigateUp,
+            )
+        }
+
         NodeDetailRoute.entries.forEach { entry ->
             when (entry.route) {
                 is NodeDetailRoutes.DeviceMetrics ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.DeviceMetrics>(
                         navController,
-                        uiViewModel,
-                        entry,
-                        entry.screenComposable,
-                    )
-                is NodeDetailRoutes.NodeMap ->
-                    addNodeDetailScreenComposable<NodeDetailRoutes.NodeMap>(
-                        navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.PositionLog ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.PositionLog>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.EnvironmentMetrics ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.EnvironmentMetrics>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.SignalMetrics ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.SignalMetrics>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.PowerMetrics ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.PowerMetrics>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.TracerouteLog ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.TracerouteLog>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.HostMetricsLog ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.HostMetricsLog>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
                 is NodeDetailRoutes.PaxMetrics ->
                     addNodeDetailScreenComposable<NodeDetailRoutes.PaxMetrics>(
                         navController,
-                        uiViewModel,
                         entry,
                         entry.screenComposable,
                     )
@@ -174,21 +174,14 @@ fun NavDestination.isNodeDetailRoute(): Boolean = NodeDetailRoute.entries.any { 
  *
  * @param R The type of the [Route] object, must be serializable.
  * @param navController The [NavHostController] for navigation.
- * @param uiViewModel The shared [UIViewModel], passed to the [screenContent].
  * @param routeInfo The [NodeDetailRoute] enum entry that defines the path and metadata for this route.
  * @param screenContent A lambda that defines the composable content for the screen. It receives the shared
- *   [MetricsViewModel] and the [UIViewModel].
+ *   [MetricsViewModel].
  */
 private inline fun <reified R : Route> NavGraphBuilder.addNodeDetailScreenComposable(
     navController: NavHostController,
-    uiViewModel: UIViewModel,
     routeInfo: NodeDetailRoute,
-    crossinline screenContent:
-    @Composable (
-        navController: NavHostController,
-        metricsViewModel: MetricsViewModel,
-        passedUiViewModel: UIViewModel,
-    ) -> Unit,
+    crossinline screenContent: @Composable (metricsViewModel: MetricsViewModel, onNavigateUp: () -> Unit) -> Unit,
 ) {
     composable<R>(
         deepLinks =
@@ -200,7 +193,7 @@ private inline fun <reified R : Route> NavGraphBuilder.addNodeDetailScreenCompos
         val parentGraphBackStackEntry =
             remember(backStackEntry) { navController.getBackStackEntry(NodesRoutes.NodeDetailGraph::class) }
         val metricsViewModel = hiltViewModel<MetricsViewModel>(parentGraphBackStackEntry)
-        screenContent(navController, metricsViewModel, uiViewModel)
+        screenContent(metricsViewModel, navController::navigateUp)
     }
 }
 
@@ -208,65 +201,54 @@ enum class NodeDetailRoute(
     @StringRes val title: Int,
     val route: Route,
     val icon: ImageVector?,
-    val screenComposable:
-    @Composable (
-        navController: NavHostController,
-        metricsViewModel: MetricsViewModel,
-        uiViewModel: UIViewModel,
-    ) -> Unit,
+    val screenComposable: @Composable (metricsViewModel: MetricsViewModel, onNavigateUp: () -> Unit) -> Unit,
 ) {
     DEVICE(
         R.string.device,
         NodeDetailRoutes.DeviceMetrics,
         Icons.Default.Router,
-        { _, metricsVM, _ -> DeviceMetricsScreen(metricsVM) },
-    ),
-    NODE_MAP(
-        R.string.node_map,
-        NodeDetailRoutes.NodeMap,
-        Icons.Default.LocationOn,
-        { navController, metricsVM, uiVM -> NodeMapScreen(navController, uiVM, metricsVM) },
+        { metricsVM, onNavigateUp -> DeviceMetricsScreen(metricsVM, onNavigateUp) },
     ),
     POSITION_LOG(
         R.string.position_log,
         NodeDetailRoutes.PositionLog,
         Icons.Default.LocationOn,
-        { _, metricsVM, _ -> PositionLogScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> PositionLogScreen(metricsVM, onNavigateUp) },
     ),
     ENVIRONMENT(
         R.string.environment,
         NodeDetailRoutes.EnvironmentMetrics,
         Icons.Default.LightMode,
-        { _, metricsVM, _ -> EnvironmentMetricsScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> EnvironmentMetricsScreen(metricsVM, onNavigateUp) },
     ),
     SIGNAL(
         R.string.signal,
         NodeDetailRoutes.SignalMetrics,
         Icons.Default.CellTower,
-        { _, metricsVM, _ -> SignalMetricsScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> SignalMetricsScreen(metricsVM, onNavigateUp) },
     ),
     TRACEROUTE(
         R.string.traceroute,
         NodeDetailRoutes.TracerouteLog,
         Icons.Default.PermScanWifi,
-        { _, metricsVM, _ -> TracerouteLogScreen(viewModel = metricsVM) },
+        { metricsVM, onNavigateUp -> TracerouteLogScreen(viewModel = metricsVM, onNavigateUp = onNavigateUp) },
     ),
     POWER(
         R.string.power,
         NodeDetailRoutes.PowerMetrics,
         Icons.Default.Power,
-        { _, metricsVM, _ -> PowerMetricsScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> PowerMetricsScreen(metricsVM, onNavigateUp) },
     ),
     HOST(
         R.string.host,
         NodeDetailRoutes.HostMetricsLog,
         Icons.Default.Memory,
-        { _, metricsVM, _ -> HostMetricsLogScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> HostMetricsLogScreen(metricsVM, onNavigateUp) },
     ),
     PAX(
         R.string.pax,
         NodeDetailRoutes.PaxMetrics,
         Icons.Default.People,
-        { _, metricsVM, _ -> PaxMetricsScreen(metricsVM) },
+        { metricsVM, onNavigateUp -> PaxMetricsScreen(metricsVM, onNavigateUp) },
     ),
 }

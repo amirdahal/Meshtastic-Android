@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,18 +53,19 @@ import com.geeksville.mesh.TelemetryProtos
 import com.geeksville.mesh.TelemetryProtos.Telemetry
 import com.geeksville.mesh.copy
 import com.geeksville.mesh.model.MetricsViewModel
-import com.geeksville.mesh.model.TimeFrame
 import com.geeksville.mesh.ui.metrics.CommonCharts.DATE_TIME_FORMAT
 import com.geeksville.mesh.ui.metrics.CommonCharts.MS_PER_SEC
 import org.meshtastic.core.model.util.UnitConversions.celsiusToFahrenheit
 import org.meshtastic.core.strings.R
 import org.meshtastic.core.ui.component.IaqDisplayMode
 import org.meshtastic.core.ui.component.IndoorAirQuality
+import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.OptionLabel
 import org.meshtastic.core.ui.component.SlidingSelector
+import org.meshtastic.feature.node.model.TimeFrame
 
 @Composable
-fun EnvironmentMetricsScreen(viewModel: MetricsViewModel = hiltViewModel()) {
+fun EnvironmentMetricsScreen(viewModel: MetricsViewModel = hiltViewModel(), onNavigateUp: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val environmentState by viewModel.environmentState.collectAsStateWithLifecycle()
     val selectedTimeFrame by viewModel.timeFrame.collectAsState()
@@ -88,32 +90,47 @@ fun EnvironmentMetricsScreen(viewModel: MetricsViewModel = hiltViewModel()) {
         }
 
     var displayInfoDialog by remember { mutableStateOf(false) }
-    Column {
-        if (displayInfoDialog) {
-            LegendInfoDialog(
-                pairedRes = listOf(Pair(R.string.iaq, R.string.iaq_definition)),
-                onDismiss = { displayInfoDialog = false },
+
+    Scaffold(
+        topBar = {
+            MainAppBar(
+                title = state.node?.user?.longName ?: "",
+                ourNode = null,
+                showNodeChip = false,
+                canNavigateUp = true,
+                onNavigateUp = onNavigateUp,
+                actions = {},
+                onClickChip = {},
             )
-        }
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+            if (displayInfoDialog) {
+                LegendInfoDialog(
+                    pairedRes = listOf(Pair(R.string.iaq, R.string.iaq_definition)),
+                    onDismiss = { displayInfoDialog = false },
+                )
+            }
 
-        EnvironmentMetricsChart(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(fraction = 0.33f),
-            telemetries = processedTelemetries.reversed(),
-            graphData = graphData,
-            selectedTime = selectedTimeFrame,
-            promptInfoDialog = { displayInfoDialog = true },
-        )
+            EnvironmentMetricsChart(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(fraction = 0.33f),
+                telemetries = processedTelemetries.reversed(),
+                graphData = graphData,
+                selectedTime = selectedTimeFrame,
+                promptInfoDialog = { displayInfoDialog = true },
+            )
 
-        SlidingSelector(
-            TimeFrame.entries.toList(),
-            selectedTimeFrame,
-            onOptionSelected = { viewModel.setTimeFrame(it) },
-        ) {
-            OptionLabel(stringResource(it.strRes))
-        }
+            SlidingSelector(
+                TimeFrame.entries.toList(),
+                selectedTimeFrame,
+                onOptionSelected = { viewModel.setTimeFrame(it) },
+            ) {
+                OptionLabel(stringResource(it.strRes))
+            }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(processedTelemetries) { telemetry -> EnvironmentMetricsCard(telemetry, state.isFahrenheit) }
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(processedTelemetries) { telemetry -> EnvironmentMetricsCard(telemetry, state.isFahrenheit) }
+            }
         }
     }
 }

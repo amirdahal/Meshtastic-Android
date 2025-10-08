@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Filtrimi</string>
     <string name="desc_node_filter_clear">pastro filtrin e nyjës</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">Përfshi të panjohurat</string>
     <string name="node_filter_only_online">Hide offline nodes</string>
     <string name="node_filter_only_direct">Only show direct nodes</string>
     <string name="node_filter_ignored">You are viewing ignored nodes,\nPress to return to the node list.</string>
     <string name="node_filter_show_details">Shfaq detajet</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">Node sorting options</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">Kanal</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Njoftime shërbimi</string>
     <string name="about">Rreth</string>
     <string name="channel_invalid">Ky URL kanal është i pavlefshëm dhe nuk mund të përdoret</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">Paneli i debug-ut</string>
     <string name="debug_decoded_payload">Decoded Payload:</string>
     <string name="debug_logs_export">Export Logs</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Përqindja e kohës së përdorur për transmetim brenda orës së kaluar.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Çelësi i Përbashkët</string>
-    <string name="encryption_psk_text">Mesazhet direkte po përdorin çelësin e përbashkët për kanalin.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Kriptimi me Çelës Publik</string>
-    <string name="encryption_pkc_text">Mesazhet direkte po përdorin infrastrukturën e re të çelësave publikë për kriptim. Kërkon versionin 2.5 të firmuerit ose më të ri.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Përputhje e Gabuar e Çelësit Publik</string>
     <string name="encryption_error_text">Çelësi publik nuk përputhet me çelësin e regjistruar. Mund të hiqni nyjën dhe të lejoni që ajo të shkëmbejë përsëri çelësat, por kjo mund të tregojë një problem më serioz të sigurisë. Kontaktoni përdoruesin përmes një kanali tjetër të besuar për të përcaktuar nëse ndryshimi i çelësit ishte si pasojë e një rikthimi në fabrikë ose një veprim tjetër të qëllimshëm.</string>
     <string name="exchange_userinfo">Exchange user info</string>
@@ -784,7 +787,8 @@
     <string name="no_pax_metrics_logs">No PAX metrics logs available.</string>
     <string name="wifi_devices">WiFi Devices</string>
     <string name="ble_devices">BLE Devices</string>
-    <string name="bluetooth_paired_devices">Paired Devices</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Connected Device</string>
     <string name="routing_error_rate_limit_exceeded">Rate Limit Exceeded. Please try again later.</string>
     <string name="view_release">View Release</string>
@@ -884,4 +888,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

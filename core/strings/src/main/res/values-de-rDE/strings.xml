@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Filter</string>
     <string name="desc_node_filter_clear">Knotenfilter löschen</string>
+    <string name="node_filter_title">Filtern nach</string>
     <string name="node_filter_include_unknown">Unbekannte Stationen einbeziehen</string>
     <string name="node_filter_only_online">Offline Knoten ausblenden</string>
     <string name="node_filter_only_direct">Nur direkte Knoten anzeigen</string>
     <string name="node_filter_ignored">Sie sehen ignorierte Knoten,\ndrücken um zur Knotenliste zurückzukehren.</string>
     <string name="node_filter_show_details">Details anzeigen</string>
+    <string name="node_sort_title">Sortieren nach</string>
     <string name="node_sort_button">Sortieroptionen</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">Kanal</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Dienstbenachrichtigungen</string>
     <string name="about">Über</string>
     <string name="channel_invalid">Diese Kanal-URL ist ungültig und kann nicht verwendet werden</string>
+    <string name="contact_invalid">Dieser Kontakt ist ungültig und kann nicht hinzugefügt werden</string>
     <string name="debug_panel">Debug-Ausgaben</string>
     <string name="debug_decoded_payload">Dekodiertes Payload:</string>
     <string name="debug_logs_export">Protokolle exportieren</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Prozentuale Sendezeit für die Übertragung innerhalb der letzten Stunde.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Geteilter Schlüssel</string>
-    <string name="encryption_psk_text">Direktnachrichten verwenden den gemeinsamen Schlüssel für den Kanal.</string>
+    <string name="encryption_psk_text">Es können nur Kanalnachrichten gesendet/empfangen werden. Direktnachrichten erfordern die Verschlüsselung mit öffentlichem Knotenschlüssel seit Firmware 2.5+.</string>
     <string name="encryption_pkc">Verschlüsselung mit öffentlichen Schlüssel</string>
-    <string name="encryption_pkc_text">Direkte Nachrichten verwenden die neue öffentliche Schlüssel-Infrastruktur für die Verschlüsselung. Benötigt Firmware-Version 2.5 oder höher.</string>
+    <string name="encryption_pkc_text">Direktnachrichten verwenden zur den öffentlichen Knotenschlüssel zur Verschlüsselung.</string>
     <string name="encryption_error">Öffentlicher Schlüssel stimmt nicht überein</string>
     <string name="encryption_error_text">Der öffentliche Schlüssel stimmt nicht mit dem gespeicherten Schlüssel überein. Sie können den Knoten entfernen und ihn erneut Schlüssel austauschen lassen. Dies kann jedoch auf ein schwerwiegenderes Sicherheitsproblem hinweisen. Kontaktieren Sie den Benutzer über einen anderen vertrauenswürdigen Kanal, um festzustellen, ob die Schlüsseländerung durch Zurücksetzung auf die Werkseinstellungen oder eine andere absichtliche Aktion zurückzuführen ist.</string>
     <string name="exchange_userinfo">Benutzer Informationen teilen</string>
@@ -785,6 +788,7 @@
     <string name="wifi_devices">WLAN Geräte</string>
     <string name="ble_devices">BLE Geräte</string>
     <string name="bluetooth_paired_devices">Gekoppelte Geräte</string>
+    <string name="bluetooth_available_devices">Verfügbare Geräte</string>
     <string name="connected_device">Verbundene Geräte</string>
     <string name="routing_error_rate_limit_exceeded">Sendebegrenzung überschritten. Bitte versuchen Sie es später erneut.</string>
     <string name="view_release">Version ansehen</string>
@@ -884,4 +888,7 @@
     <string name="two_days">48 Stunden</string>
     <string name="last_heard_filter_label">Filtern nach letztem Empfang: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">Keine Anwendung zum Bearbeiten des Links verfügbar.</string>
+    <string name="system_settings">Systemeinstellungen</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

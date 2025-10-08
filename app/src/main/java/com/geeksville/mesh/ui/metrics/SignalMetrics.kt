@@ -37,6 +37,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,15 +59,16 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geeksville.mesh.MeshProtos.MeshPacket
 import com.geeksville.mesh.model.MetricsViewModel
-import com.geeksville.mesh.model.TimeFrame
 import com.geeksville.mesh.ui.metrics.CommonCharts.DATE_TIME_FORMAT
 import com.geeksville.mesh.ui.metrics.CommonCharts.MS_PER_SEC
 import com.geeksville.mesh.util.GraphUtil.plotPoint
 import org.meshtastic.core.strings.R
 import org.meshtastic.core.ui.component.LoraSignalIndicator
+import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.OptionLabel
 import org.meshtastic.core.ui.component.SlidingSelector
 import org.meshtastic.core.ui.component.SnrAndRssi
+import org.meshtastic.feature.node.model.TimeFrame
 
 @Suppress("MagicNumber")
 private enum class Metric(val color: Color, val min: Float, val max: Float) {
@@ -89,37 +91,56 @@ private val LEGEND_DATA =
     )
 
 @Composable
-fun SignalMetricsScreen(viewModel: MetricsViewModel = hiltViewModel()) {
+fun SignalMetricsScreen(viewModel: MetricsViewModel = hiltViewModel(), onNavigateUp: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var displayInfoDialog by remember { mutableStateOf(false) }
     val selectedTimeFrame by viewModel.timeFrame.collectAsState()
     val data = state.signalMetricsFiltered(selectedTimeFrame)
 
-    Column {
-        if (displayInfoDialog) {
-            LegendInfoDialog(
-                pairedRes =
-                listOf(Pair(R.string.snr, R.string.snr_definition), Pair(R.string.rssi, R.string.rssi_definition)),
-                onDismiss = { displayInfoDialog = false },
+    Scaffold(
+        topBar = {
+            MainAppBar(
+                title = state.node?.user?.longName ?: "",
+                ourNode = null,
+                showNodeChip = false,
+                canNavigateUp = true,
+                onNavigateUp = onNavigateUp,
+                actions = {},
+                onClickChip = {},
             )
+        },
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
+            if (displayInfoDialog) {
+                LegendInfoDialog(
+                    pairedRes =
+                    listOf(
+                        Pair(R.string.snr, R.string.snr_definition),
+                        Pair(R.string.rssi, R.string.rssi_definition),
+                    ),
+                    onDismiss = { displayInfoDialog = false },
+                )
+            }
+
+            SignalMetricsChart(
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(fraction = 0.33f),
+                meshPackets = data.reversed(),
+                selectedTimeFrame,
+                promptInfoDialog = { displayInfoDialog = true },
+            )
+
+            SlidingSelector(
+                TimeFrame.entries.toList(),
+                selectedTimeFrame,
+                onOptionSelected = { viewModel.setTimeFrame(it) },
+            ) {
+                OptionLabel(stringResource(it.strRes))
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(data) { meshPacket -> SignalMetricsCard(meshPacket) }
+            }
         }
-
-        SignalMetricsChart(
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(fraction = 0.33f),
-            meshPackets = data.reversed(),
-            selectedTimeFrame,
-            promptInfoDialog = { displayInfoDialog = true },
-        )
-
-        SlidingSelector(
-            TimeFrame.entries.toList(),
-            selectedTimeFrame,
-            onOptionSelected = { viewModel.setTimeFrame(it) },
-        ) {
-            OptionLabel(stringResource(it.strRes))
-        }
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) { items(data) { meshPacket -> SignalMetricsCard(meshPacket) } }
     }
 }
 

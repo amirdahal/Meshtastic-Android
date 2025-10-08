@@ -49,16 +49,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import com.geeksville.mesh.ui.common.preview.NodePreviewParameterProvider
-import com.geeksville.mesh.ui.node.components.NodeChip
 import org.meshtastic.core.database.entity.Reaction
 import org.meshtastic.core.database.model.Message
 import org.meshtastic.core.database.model.Node
 import org.meshtastic.core.model.MessageStatus
 import org.meshtastic.core.strings.R
-import org.meshtastic.core.ui.component.MDText
+import org.meshtastic.core.ui.component.AutoLinkText
+import org.meshtastic.core.ui.component.NodeChip
 import org.meshtastic.core.ui.component.Rssi
 import org.meshtastic.core.ui.component.Snr
+import org.meshtastic.core.ui.component.preview.NodePreviewParameterProvider
 import org.meshtastic.core.ui.theme.AppTheme
 import org.meshtastic.core.ui.theme.MessageItemColors
 
@@ -158,7 +158,7 @@ internal fun MessageItem(
                 }
 
                 Column(modifier = Modifier.padding(horizontal = 8.dp)) {
-                    MDText(
+                    AutoLinkText(
                         modifier = Modifier.fillMaxWidth(),
                         text = message.text,
                         style = MaterialTheme.typography.bodyMedium,
@@ -174,8 +174,8 @@ internal fun MessageItem(
                         if (!message.fromLocal) {
                             if (message.hopsAway == 0) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Snr(message.snr, fontSize = MaterialTheme.typography.labelSmall.fontSize)
-                                    Rssi(message.rssi, fontSize = MaterialTheme.typography.labelSmall.fontSize)
+                                    Snr(message.snr)
+                                    Rssi(message.rssi)
                                 }
                             } else {
                                 Text(

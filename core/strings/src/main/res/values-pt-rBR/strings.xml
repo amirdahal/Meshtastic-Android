@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Filtro</string>
     <string name="desc_node_filter_clear">limpar filtro de dispositivos</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">Incluir desconhecido</string>
     <string name="node_filter_only_online">Ocultar nós offline</string>
     <string name="node_filter_only_direct">Mostrar apenas nós diretos</string>
     <string name="node_filter_ignored">Você está vendo nós ignorados,\nPressione para retornar à lista de nós.</string>
     <string name="node_filter_show_details">Mostrar detalhes</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">Opções de ordenação do nó</string>
     <string name="node_sort_alpha">A-Z</string>
     <string name="node_sort_channel">Canal</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Notificações de serviço</string>
     <string name="about">Sobre</string>
     <string name="channel_invalid">Este link de canal é inválido e não pode ser usado</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">Painel de depuração</string>
     <string name="debug_decoded_payload">Pacote Decodificado:</string>
     <string name="debug_logs_export">Exportar Logs</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Percentagem do tempo de ar utilizado na última hora para transmissões.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Chave Compartilhada</string>
-    <string name="encryption_psk_text">Mensagens diretas estão usando a chave compartilhada do canal.</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">Criptografia de Chave Pública</string>
-    <string name="encryption_pkc_text">Mensagens diretas estão usando a nova infraestrutura de chave pública para criptografia. Requer firmware versão 2.5 ou superior.</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">Chave pública não confere</string>
     <string name="encryption_error_text">A chave pública não corresponde à chave gravada. Você pode remover o nó e deixá-lo trocar as chaves novamente, mas isso pode indicar um problema de segurança mais sério. Contate o usuário através de outro canal confiável, para determinar se a chave mudou devido a uma restauração de fábrica ou outra ação intencional.</string>
     <string name="exchange_userinfo">Trocar informações de usuário</string>
@@ -784,7 +787,8 @@
     <string name="no_pax_metrics_logs">Não há logs de métricas de PAX disponíveis.</string>
     <string name="wifi_devices">Dispositivos WiFi</string>
     <string name="ble_devices">Dispositivos BLE</string>
-    <string name="bluetooth_paired_devices">Dispositivos Pareados</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Dispositivo Conectado</string>
     <string name="routing_error_rate_limit_exceeded">Limite excedido. Por favor, tente novamente mais tarde.</string>
     <string name="view_release">Ver Lançamento</string>
@@ -884,4 +888,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

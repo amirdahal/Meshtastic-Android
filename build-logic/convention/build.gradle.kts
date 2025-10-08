@@ -40,16 +40,20 @@ kotlin {
 
 dependencies {
     compileOnly(libs.android.gradleApiPlugin)
+    compileOnly(libs.serialization.gradlePlugin)
     compileOnly(libs.android.tools.common)
     compileOnly(libs.compose.gradlePlugin)
-    compileOnly(libs.detekt.gradle)
+    compileOnly(libs.datadog.gradlePlugin)
+    compileOnly(libs.detekt.gradlePlugin)
     compileOnly(libs.firebase.crashlytics.gradlePlugin)
-    compileOnly(libs.firebase.performance.gradlePlugin)
+    compileOnly(libs.google.services.gradlePlugin)
+    compileOnly(libs.hilt.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
-    compileOnly(libs.room.gradlePlugin)
+    compileOnly(libs.androidx.room.gradlePlugin)
+    compileOnly(libs.secrets.gradlePlugin)
     compileOnly(libs.spotless.gradlePlugin)
-    implementation(libs.truth)
+    compileOnly(libs.truth)
 }
 
 tasks {
@@ -77,14 +81,6 @@ gradlePlugin {
         register("androidLint") {
             id = libs.plugins.meshtastic.android.lint.get().pluginId
             implementationClass = "AndroidLintConventionPlugin"
-        }
-        register("androidFirebase") {
-            id = libs.plugins.meshtastic.android.application.firebase.get().pluginId
-            implementationClass = "AndroidApplicationFirebaseConventionPlugin"
-        }
-        register("androidDatadog") {
-            id = libs.plugins.meshtastic.android.application.datadog.get().pluginId
-            implementationClass = "AndroidApplicationDatadogConventionPlugin"
         }
         register("androidLibraryCompose") {
             id = libs.plugins.meshtastic.android.library.compose.get().pluginId

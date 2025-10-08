@@ -25,23 +25,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,37 +44,35 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geeksville.mesh.ConfigProtos
 import com.geeksville.mesh.model.BTScanModel
 import com.geeksville.mesh.model.DeviceListEntry
-import com.geeksville.mesh.navigation.ConfigRoute
-import com.geeksville.mesh.navigation.getNavRouteFrom
-import com.geeksville.mesh.service.ConnectionState
-import com.geeksville.mesh.ui.common.components.MainAppBar
 import com.geeksville.mesh.ui.connections.components.BLEDevices
 import com.geeksville.mesh.ui.connections.components.ConnectionsSegmentedBar
 import com.geeksville.mesh.ui.connections.components.CurrentlyConnectedInfo
 import com.geeksville.mesh.ui.connections.components.NetworkDevices
 import com.geeksville.mesh.ui.connections.components.UsbDevices
-import com.geeksville.mesh.ui.settings.components.SettingsItem
-import com.geeksville.mesh.ui.settings.radio.RadioConfigViewModel
-import com.geeksville.mesh.ui.settings.radio.components.PacketResponseStateDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.delay
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoutes
+import org.meshtastic.core.service.ConnectionState
 import org.meshtastic.core.strings.R
+import org.meshtastic.core.ui.component.MainAppBar
+import org.meshtastic.core.ui.component.SettingsItem
 import org.meshtastic.core.ui.component.TitledCard
+import org.meshtastic.feature.settings.navigation.ConfigRoute
+import org.meshtastic.feature.settings.navigation.getNavRouteFrom
+import org.meshtastic.feature.settings.radio.RadioConfigViewModel
+import org.meshtastic.feature.settings.radio.component.PacketResponseStateDialog
 
 fun String?.isIPAddress(): Boolean = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
     @Suppress("DEPRECATION")
@@ -111,14 +104,14 @@ fun ConnectionsScreen(
         connectionsViewModel.connectionState.collectAsStateWithLifecycle(ConnectionState.DISCONNECTED)
     val scanning by scanModel.spinner.collectAsStateWithLifecycle(false)
     val context = LocalContext.current
-    val info by connectionsViewModel.myNodeInfo.collectAsStateWithLifecycle()
     val ourNode by connectionsViewModel.ourNodeInfo.collectAsStateWithLifecycle()
     val selectedDevice by scanModel.selectedNotNullFlow.collectAsStateWithLifecycle()
     val bluetoothState by connectionsViewModel.bluetoothState.collectAsStateWithLifecycle()
     val regionUnset = config.lora.region == ConfigProtos.Config.LoRaConfig.RegionCode.UNSET
     val bluetoothRssi by connectionsViewModel.bluetoothRssi.collectAsStateWithLifecycle()
 
-    val bleDevices by scanModel.bleDevicesForUi.collectAsStateWithLifecycle()
+    val bondedBleDevices by scanModel.bleDevicesForUi.collectAsStateWithLifecycle()
+    val scannedBleDevices by scanModel.scanResult.observeAsState(emptyMap())
     val discoveredTcpDevices by scanModel.discoveredTcpDevicesForUi.collectAsStateWithLifecycle()
     val recentTcpDevices by scanModel.recentTcpDevicesForUi.collectAsStateWithLifecycle()
     val usbDevices by scanModel.usbDevicesForUi.collectAsStateWithLifecycle()
@@ -152,27 +145,15 @@ fun ConnectionsScreen(
         }
     }
 
-    // State for the device scan dialog
-    var showScanDialog by remember { mutableStateOf(false) }
-    val scanResults by scanModel.scanResult.observeAsState(emptyMap())
-
-    // Observe scan results to show the dialog
-    if (scanResults.isNotEmpty()) {
-        showScanDialog = true
-    }
-
     LaunchedEffect(connectionState, regionUnset) {
         when (connectionState) {
             ConnectionState.CONNECTED -> {
-                if (regionUnset) R.string.must_set_region else R.string.connected_to
+                if (regionUnset) R.string.must_set_region else R.string.connected
             }
 
             ConnectionState.DISCONNECTED -> R.string.not_connected
             ConnectionState.DEVICE_SLEEP -> R.string.connected_sleeping
-        }.let {
-            val firmwareString = info?.firmwareString ?: context.getString(R.string.unknown)
-            scanModel.setErrorText(context.getString(it, firmwareString))
-        }
+        }.let { scanModel.setErrorText(context.getString(it)) }
     }
 
     Scaffold(
@@ -245,7 +226,11 @@ fun ConnectionsScreen(
                             DeviceType.BLE -> {
                                 BLEDevices(
                                     connectionState = connectionState,
-                                    btDevices = bleDevices,
+                                    bondedDevices = bondedBleDevices,
+                                    availableDevices =
+                                    scannedBleDevices.values.toList().filterNot { available ->
+                                        bondedBleDevices.any { it.address == available.address }
+                                    },
                                     selectedDevice = selectedDevice,
                                     scanModel = scanModel,
                                     bluetoothEnabled = bluetoothState.enabled,
@@ -280,7 +265,7 @@ fun ConnectionsScreen(
                         val showWarningNotPaired =
                             !connectionState.isConnected() &&
                                 !hasShownNotPairedWarning &&
-                                bleDevices.none { it is DeviceListEntry.Ble && it.bonded }
+                                bondedBleDevices.none { it is DeviceListEntry.Ble && it.bonded }
                         if (showWarningNotPaired) {
                             Text(
                                 text = stringResource(R.string.warning_not_paired),
@@ -291,55 +276,6 @@ fun ConnectionsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             LaunchedEffect(Unit) { connectionsViewModel.suppressNoPairedWarning() }
-                        }
-                    }
-                }
-
-                // Compose Device Scan Dialog
-                if (showScanDialog) {
-                    Dialog(
-                        onDismissRequest = {
-                            showScanDialog = false
-                            scanModel.clearScanResults()
-                        },
-                    ) {
-                        Surface(shape = MaterialTheme.shapes.medium) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Select a Bluetooth device",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(bottom = 16.dp),
-                                )
-                                Column(modifier = Modifier.selectableGroup()) {
-                                    scanResults.values.forEach { device ->
-                                        Row(
-                                            modifier =
-                                            Modifier.fillMaxWidth()
-                                                .selectable(
-                                                    selected = false, // No pre-selection in this dialog
-                                                    onClick = {
-                                                        scanModel.onSelected(device)
-                                                        scanModel.clearScanResults()
-                                                        showScanDialog = false
-                                                    },
-                                                )
-                                                .padding(vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            Text(text = device.name)
-                                        }
-                                    }
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
-                                TextButton(
-                                    onClick = {
-                                        scanModel.clearScanResults()
-                                        showScanDialog = false
-                                    },
-                                ) {
-                                    Text(stringResource(R.string.cancel))
-                                }
-                            }
                         }
                     }
                 }

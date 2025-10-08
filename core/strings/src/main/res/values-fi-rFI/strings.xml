@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">Suodatus</string>
     <string name="desc_node_filter_clear">tyhjennä suodatukset</string>
+    <string name="node_filter_title">Suodata otsikon mukaan</string>
     <string name="node_filter_include_unknown">Näytä tuntemattomat</string>
     <string name="node_filter_only_online">Piilota ei yhteydessä olevat laitteet</string>
     <string name="node_filter_only_direct">Näytä vain suorat yhteydet</string>
     <string name="node_filter_ignored">Katselet tällä hetkellä huomioimattomia laitteita,\nPaina palataksesi laitelistaan.</string>
     <string name="node_filter_show_details">Näytä lisätiedot</string>
+    <string name="node_sort_title">Lajittele otsikon mukaan</string>
     <string name="node_sort_button">Lajitteluvaihtoehdot</string>
     <string name="node_sort_alpha">A-Ö</string>
     <string name="node_sort_channel">Kanava</string>
@@ -107,15 +109,15 @@
     <string name="config_lora_modem_preset_summary">Saatavilla olevat modeemiesiasetukset, oletus on Long Fast.</string>
     <string name="config_lora_hop_limit_summary">Asettaa maksimihyppyjen määrän, oletus on 3. Hyppyjen määrän lisääminen kasvattaa myös ruuhkaa, joten sitä tulisi käyttää varoen. 0 hypyn lähettämät viestit eivät saa kuittauksia (ACK).</string>
     <string name="config_lora_frequency_slot_summary">Laitteesi käyttämä taajuus lasketaan alueen, modeemin esiasetuksen ja tämän kentän perusteella. Kun arvo on 0, aikaväli lasketaan automaattisesti ensisijaisen kanavan nimen perusteella ja se poikkeaa oletus-julkisesta aikavälistä. Vaihda takaisin julkiseen oletus-aikaväliin, jos käytössä on yksityinen ensisijainen ja julkinen toissijainen kanava.</string>
-    <string name="label_very_long_slow">Erittäin pitkä kantama – Hidas</string>
-    <string name="label_long_fast">Pitkä kantama – Nopea</string>
-    <string name="label_long_moderate">Pitkä kantama – Kohtalainen</string>
-    <string name="label_long_slow">Pitkä kantama – Hidas</string>
-    <string name="label_medium_fast">Keskipitkä kantama – Nopea</string>
-    <string name="label_medium_slow">Keskipitkä kantama – Hidas</string>
-    <string name="label_short_turbo">Lyhyt kantama – Turbo</string>
-    <string name="label_short_fast">Lyhyt kantama – Nopea</string>
-    <string name="label_short_slow">Lyhyt kantama – Hidas</string>
+    <string name="label_very_long_slow">Very Long Range - Slow</string>
+    <string name="label_long_fast">Long Range - Fast</string>
+    <string name="label_long_moderate">Long Range - Moderate</string>
+    <string name="label_long_slow">Long Range - Slow</string>
+    <string name="label_medium_fast">Medium Range - Fast</string>
+    <string name="label_medium_slow">Medium Range - Slow</string>
+    <string name="label_short_turbo">Short Range - Turbo</string>
+    <string name="label_short_fast">Short Range - Fast</string>
+    <string name="label_short_slow">Short Range - Slow</string>
     <string name="config_network_wifi_enabled_summary">WiFi:n käyttöön ottaminen poistaa Bluetooth-yhteyden sovellukseen.</string>
     <string name="config_network_eth_enabled_summary">Ethernetin ottaminen käyttöön poistaa Bluetooth-yhteyden sovellukseen. TCP-laiteyhteydet eivät ole käytettävissä Applen laitteilla.</string>
     <string name="config_network_udp_enabled_summary">Ota käyttöön pakettien lähettäminen UDP:n kautta paikallisverkossa.</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">Palveluilmoitukset</string>
     <string name="about">Tietoja</string>
     <string name="channel_invalid">Kanavan URL-osoite on virheellinen, eikä sitä voida käyttää</string>
+    <string name="contact_invalid">Tämä yhteystieto on virheellinen eikä sitä voi lisätä</string>
     <string name="debug_panel">Vianetsintäpaneeli</string>
     <string name="debug_decoded_payload">Dekoodattu data:</string>
     <string name="debug_logs_export">Vie lokitiedot</string>
@@ -270,7 +273,7 @@
     <string name="delivery_confirmed">Toimitus vahvistettu</string>
     <string name="error">Virhe</string>
     <string name="ignore">Jätä huomiotta</string>
-    <string name="remove_ignored">Remove from ignored</string>
+    <string name="remove_ignored">Poista huomioimattomista</string>
     <string name="ignore_add">Lisää \'%s\' jätä huomiotta listalle? Laite käynnistyy uudelleen muutoksen tekemisen jälkeen.</string>
     <string name="ignore_remove">Poistetaanko \'%s\' jätä huomiotta listalta? Laite käynnistyy uudelleen muutoksen tekemisen jälkeen.</string>
     <string name="map_select_download_region">Valitse ladattava kartta-alue</string>
@@ -325,9 +328,9 @@
     <string name="air_util_definition">Viimeisen tunnin aikana käytetyn lähetyksen prosenttiosuus.</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">Jaettu avain</string>
-    <string name="encryption_psk_text">Suorat viestit käyttävät kanavan jaettua avainta.</string>
+    <string name="encryption_psk_text">Voit lähettää ja vastaanottaa vain kanavaviestejä. Yksityisviestit toimivat vasta, kun käytössä on ohjelmistoversio 2.5+ tai uudempi, jossa on tuki salausavaimille.</string>
     <string name="encryption_pkc">Julkisen avaimen salaus</string>
-    <string name="encryption_pkc_text">Suorat viestit käyttävät uutta julkisen avaimen infrastruktuuria salaukseen. Vaatii laiteohjelmiston version 2.5 tai uudemman.</string>
+    <string name="encryption_pkc_text">Yksityisviesteissä käytetään uutta julkisen avaimen infrastruktuuria salaukseen.</string>
     <string name="encryption_error">Julkinen avain ei täsmää</string>
     <string name="encryption_error_text">Julkinen avain ei vastaa kirjattua avainta. Voit poistaa laitteen ja antaa sen vaihtaa avaimia uudelleen, mutta tämä saattaa merkitä vakavampaa turvallisuusongelmaa. Ota yhteyttä käyttäjään toisen luotetun kanavan kautta määrittääksesi, johtuiko avain tehtaan resetoinnista tai muusta tarkoituksellisesta toiminnosta.</string>
     <string name="exchange_userinfo">Tarkastele käyttäjätietoja</string>
@@ -371,8 +374,8 @@
     <string name="alert_bell_text">Hälytysääni!</string>
     <string name="critical_alert">Kriittinen hälytys!</string>
     <string name="favorite">Suosikki</string>
-    <string name="add_favorite">Add to favorites</string>
-    <string name="remove_favorite">Remove from favorites</string>
+    <string name="add_favorite">Lisää suosikkeihin</string>
+    <string name="remove_favorite">Poista suosikeista</string>
     <string name="favorite_add">Lisää \'%s\' radio suosikkeihin?</string>
     <string name="favorite_remove">Poista \'%s\' radio suosikeista?</string>
     <string name="power_metrics_log">Tehomittausdata</string>
@@ -785,6 +788,7 @@
     <string name="wifi_devices">WiFi-laitteet</string>
     <string name="ble_devices">Bluetooth-laitteet</string>
     <string name="bluetooth_paired_devices">Paritetut laitteet</string>
+    <string name="bluetooth_available_devices">Käytettävissä olevat laitteet</string>
     <string name="connected_device">Yhdistetty laite</string>
     <string name="routing_error_rate_limit_exceeded">Käyttöraja ylitetty. Yritä myöhemmin uudelleen.</string>
     <string name="view_release">Näytä versio</string>
@@ -884,4 +888,7 @@
     <string name="two_days">48 tuntia</string>
     <string name="last_heard_filter_label">Suodata viimeksi kuullun ajan mukaan: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">Ei sovellusta linkin avaamiseen.</string>
+    <string name="system_settings">Järjestelmäasetukset</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

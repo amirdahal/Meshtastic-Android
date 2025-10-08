@@ -22,7 +22,6 @@ package com.geeksville.mesh.ui
 import android.Manifest
 import android.os.Build
 import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -76,9 +75,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.geeksville.mesh.BuildConfig
 import com.geeksville.mesh.MeshProtos
-import com.geeksville.mesh.android.AddNavigationTracking
-import com.geeksville.mesh.android.BuildUtils.debug
-import com.geeksville.mesh.android.setAttributes
 import com.geeksville.mesh.model.BTScanModel
 import com.geeksville.mesh.model.UIViewModel
 import com.geeksville.mesh.navigation.channelsGraph
@@ -86,15 +82,13 @@ import com.geeksville.mesh.navigation.connectionsGraph
 import com.geeksville.mesh.navigation.contactsGraph
 import com.geeksville.mesh.navigation.mapGraph
 import com.geeksville.mesh.navigation.nodesGraph
-import com.geeksville.mesh.navigation.settingsGraph
 import com.geeksville.mesh.repository.radio.MeshActivity
-import com.geeksville.mesh.service.ConnectionState
 import com.geeksville.mesh.service.MeshService
-import com.geeksville.mesh.ui.common.components.MainAppBar
 import com.geeksville.mesh.ui.common.components.ScannedQrCodeDialog
 import com.geeksville.mesh.ui.connections.DeviceType
 import com.geeksville.mesh.ui.connections.components.TopLevelNavIcon
 import com.geeksville.mesh.ui.metrics.annotateTraceroute
+import com.geeksville.mesh.ui.sharing.SharedContactDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -104,10 +98,10 @@ import org.meshtastic.core.model.DeviceVersion
 import org.meshtastic.core.navigation.ConnectionsRoutes
 import org.meshtastic.core.navigation.ContactsRoutes
 import org.meshtastic.core.navigation.MapRoutes
-import org.meshtastic.core.navigation.NodeDetailRoutes
 import org.meshtastic.core.navigation.NodesRoutes
 import org.meshtastic.core.navigation.Route
 import org.meshtastic.core.navigation.SettingsRoutes
+import org.meshtastic.core.service.ConnectionState
 import org.meshtastic.core.strings.R
 import org.meshtastic.core.ui.component.MultipleChoiceAlertDialog
 import org.meshtastic.core.ui.component.SimpleAlertDialog
@@ -118,6 +112,8 @@ import org.meshtastic.core.ui.icon.Nodes
 import org.meshtastic.core.ui.icon.Settings
 import org.meshtastic.core.ui.theme.StatusColors.StatusBlue
 import org.meshtastic.core.ui.theme.StatusColors.StatusGreen
+import org.meshtastic.feature.settings.navigation.settingsGraph
+import timber.log.Timber
 
 enum class TopLevelDestination(@StringRes val label: Int, val icon: ImageVector, val route: Route) {
     Conversations(R.string.conversations, MeshtasticIcons.Conversations, ContactsRoutes.ContactsGraph),
@@ -140,6 +136,7 @@ fun MainScreen(uIViewModel: UIViewModel = hiltViewModel(), scanModel: BTScanMode
     val navController = rememberNavController()
     val connectionState by uIViewModel.connectionState.collectAsStateWithLifecycle()
     val requestChannelSet by uIViewModel.requestChannelSet.collectAsStateWithLifecycle()
+    val sharedContactRequested by uIViewModel.sharedContactRequested.collectAsStateWithLifecycle()
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val notificationPermissionState = rememberPermissionState(Manifest.permission.POST_NOTIFICATIONS)
@@ -150,14 +147,19 @@ fun MainScreen(uIViewModel: UIViewModel = hiltViewModel(), scanModel: BTScanMode
         }
     }
 
-    AddNavigationTracking(navController)
-
     if (connectionState == ConnectionState.CONNECTED) {
-        requestChannelSet?.let { newChannelSet -> ScannedQrCodeDialog(uIViewModel, newChannelSet) }
+        sharedContactRequested?.let {
+            SharedContactDialog(sharedContact = it, onDismiss = { uIViewModel.clearSharedContactRequested() })
+        }
+
+        requestChannelSet?.let { newChannelSet ->
+            ScannedQrCodeDialog(newChannelSet, onDismiss = { uIViewModel.clearRequestChannelUrl() })
+        }
     }
 
-    VersionChecks(uIViewModel)
+    uIViewModel.AddNavigationTrackingEffect(navController)
 
+    VersionChecks(uIViewModel)
     val alertDialogState by uIViewModel.currentAlert.collectAsStateWithLifecycle()
     alertDialogState?.let { state ->
         if (state.choices.isNotEmpty()) {
@@ -230,8 +232,6 @@ fun MainScreen(uIViewModel: UIViewModel = hiltViewModel(), scanModel: BTScanMode
     val receiveColor = capturedColorScheme.StatusBlue
     LaunchedEffect(uIViewModel.meshActivity, capturedColorScheme) {
         uIViewModel.meshActivity.collectLatest { activity ->
-            debug("MeshActivity Event: $activity, Current Alpha: ${animatedGlowAlpha.value}")
-
             val newTargetColor =
                 when (activity) {
                     is MeshActivity.Send -> sendColor
@@ -334,69 +334,15 @@ fun MainScreen(uIViewModel: UIViewModel = hiltViewModel(), scanModel: BTScanMode
     ) {
         Scaffold(snackbarHost = { SnackbarHost(uIViewModel.snackBarHostState) }) { _ ->
             Column(modifier = Modifier.fillMaxSize()) {
-                fun NavDestination.hasGlobalAppBar(): Boolean =
-                    // List of screens to exclude from having the global app bar
-                    listOf(
-                        ConnectionsRoutes.Connections::class,
-                        ContactsRoutes.Contacts::class,
-                        MapRoutes.Map::class,
-                        NodeDetailRoutes.NodeMap::class,
-                        NodesRoutes.Nodes::class,
-                        NodesRoutes.NodeDetail::class,
-                        SettingsRoutes.Settings::class,
-                        SettingsRoutes.AmbientLighting::class,
-                        SettingsRoutes.LoRa::class,
-                        SettingsRoutes.Security::class,
-                        SettingsRoutes.Audio::class,
-                        SettingsRoutes.Bluetooth::class,
-                        SettingsRoutes.ChannelConfig::class,
-                        SettingsRoutes.DetectionSensor::class,
-                        SettingsRoutes.Display::class,
-                        SettingsRoutes.Telemetry::class,
-                        SettingsRoutes.Network::class,
-                        SettingsRoutes.Paxcounter::class,
-                        SettingsRoutes.Power::class,
-                        SettingsRoutes.Position::class,
-                        SettingsRoutes.User::class,
-                        SettingsRoutes.StoreForward::class,
-                        SettingsRoutes.MQTT::class,
-                        SettingsRoutes.Serial::class,
-                        SettingsRoutes.ExtNotification::class,
-                        SettingsRoutes.CleanNodeDb::class,
-                        SettingsRoutes.DebugPanel::class,
-                        SettingsRoutes.RangeTest::class,
-                        SettingsRoutes.CannedMessage::class,
-                        SettingsRoutes.RemoteHardware::class,
-                        SettingsRoutes.NeighborInfo::class,
-                    )
-                        .none { this.hasRoute(it) }
-
-                val ourNodeInfo by uIViewModel.ourNodeInfo.collectAsStateWithLifecycle()
-                AnimatedVisibility(visible = currentDestination?.hasGlobalAppBar() ?: false) {
-                    MainAppBar(
-                        navController = navController,
-                        ourNode = ourNodeInfo,
-                        onClickChip = {
-                            navController.navigate(
-                                NodesRoutes.NodeDetailGraph(it.num),
-                                {
-                                    launchSingleTop = true
-                                    restoreState = true
-                                },
-                            )
-                        },
-                    )
-                }
-
                 NavHost(
                     navController = navController,
                     startDestination = NodesRoutes.NodesGraph,
                     modifier = Modifier.fillMaxSize().recalculateWindowInsets().safeDrawingPadding().imePadding(),
                 ) {
                     contactsGraph(navController)
-                    nodesGraph(navController, uiViewModel = uIViewModel)
+                    nodesGraph(navController)
                     mapGraph(navController)
-                    channelsGraph(navController, uiViewModel = uIViewModel)
+                    channelsGraph(navController)
                     connectionsGraph(navController)
                     settingsGraph(navController)
                 }
@@ -416,16 +362,12 @@ private fun VersionChecks(viewModel: UIViewModel) {
 
     val firmwareEdition by viewModel.firmwareEdition.collectAsStateWithLifecycle(null)
 
-    val currentFirmwareVersion by viewModel.firmwareVersion.collectAsStateWithLifecycle(null)
-
-    val currentDeviceHardware by viewModel.deviceHardware.collectAsStateWithLifecycle(null)
-
     val latestStableFirmwareRelease by
         viewModel.latestStableFirmwareRelease.collectAsStateWithLifecycle(DeviceVersion("2.6.4"))
     LaunchedEffect(connectionState, firmwareEdition) {
         if (connectionState == ConnectionState.CONNECTED) {
             firmwareEdition?.let { edition ->
-                debug("FirmwareEdition: ${edition.name}")
+                Timber.d("FirmwareEdition: ${edition.name}")
                 when (edition) {
                     MeshProtos.FirmwareEdition.VANILLA -> {
                         // Handle any specific logic for VANILLA firmware edition if needed
@@ -435,14 +377,6 @@ private fun VersionChecks(viewModel: UIViewModel) {
                         // Handle other firmware editions if needed
                     }
                 }
-            }
-        }
-    }
-
-    LaunchedEffect(connectionState, currentFirmwareVersion, currentDeviceHardware) {
-        if (connectionState == ConnectionState.CONNECTED) {
-            if (currentDeviceHardware != null && currentFirmwareVersion != null) {
-                setAttributes(currentFirmwareVersion!!, currentDeviceHardware!!)
             }
         }
     }

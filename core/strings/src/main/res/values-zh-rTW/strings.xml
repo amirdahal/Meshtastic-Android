@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">過濾器</string>
     <string name="desc_node_filter_clear">清除節點過濾器</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">顯示未知節點</string>
     <string name="node_filter_only_online">隱藏離線節點</string>
     <string name="node_filter_only_direct">只顯示直連節點</string>
     <string name="node_filter_ignored">您正在檢視已忽略的節點\n請返回到節點列表。</string>
     <string name="node_filter_show_details">顯示詳細資料</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">節點排序選項</string>
     <string name="node_sort_alpha">依名字排序</string>
     <string name="node_sort_channel">頻道</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">服務通知</string>
     <string name="about">關於</string>
     <string name="channel_invalid">此頻道 URL 無效，無法使用</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">除錯面板</string>
     <string name="debug_decoded_payload">解析封包：</string>
     <string name="debug_logs_export">匯出日誌</string>
@@ -324,9 +327,9 @@
     <string name="air_util_definition">過去一小時内傳輸所使用的通話時間（airtime）百分比。</string>
     <string name="iaq">室内空氣品質指標(IAQ)</string>
     <string name="encryption_psk">共用金鑰</string>
-    <string name="encryption_psk_text">私訊使用頻道的共用金鑰進行加密。</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">加密公鑰</string>
-    <string name="encryption_pkc_text">私訊採用全新的公鑰加密技術進行加密。需要將韌體版本更新至 2.5 或以上。</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">公鑰不相符</string>
     <string name="encryption_error_text">公鑰與記錄的公鑰不符。您可以移除節點並讓其重新交換金鑰，但這可能表示存在更嚴重的安全問題。請透過其他可信賴的管道聯繫使用者，以確定金鑰更改是否由於出廠重置或其他有意行動所致。</string>
     <string name="exchange_userinfo">交換用戶信息</string>
@@ -782,7 +785,8 @@
     <string name="no_pax_metrics_logs">沒有可用的 PAX 指標日誌。</string>
     <string name="wifi_devices">WiFi 裝置</string>
     <string name="ble_devices">藍牙裝置</string>
-    <string name="bluetooth_paired_devices">配對裝置</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">連接裝置</string>
     <string name="routing_error_rate_limit_exceeded">超過速率限制，請稍後再嘗試。</string>
     <string name="view_release">查看版本資訊</string>
@@ -882,4 +886,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>

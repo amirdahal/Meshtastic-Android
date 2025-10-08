@@ -19,9 +19,9 @@ package com.geeksville.mesh.repository.radio
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService
-import com.geeksville.mesh.android.Logging
 import com.geeksville.mesh.concurrent.handledLaunch
 import com.geeksville.mesh.repository.bluetooth.BluetoothRepository
 import com.geeksville.mesh.service.BLECharacteristicNotFoundException
@@ -35,10 +35,16 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.stateIn
+import org.meshtastic.core.analytics.platform.PlatformAnalytics
 import org.meshtastic.core.model.util.anonymize
+import timber.log.Timber
 import java.lang.reflect.Method
 import java.util.UUID
 
@@ -104,9 +110,9 @@ constructor(
     context: Application,
     bluetoothRepository: BluetoothRepository,
     private val service: RadioInterfaceService,
+    analytics: PlatformAnalytics,
     @Assisted val address: String,
-) : IRadioInterface,
-    Logging {
+) : IRadioInterface {
 
     companion object {
         // this service UUID is publicly visible for scanning
@@ -139,40 +145,61 @@ constructor(
 
     private lateinit var fromNum: BluetoothGattCharacteristic
 
-    // RSSI flow & polling job (null when unavailable / disconnected)
-    private val _rssiFlow = MutableStateFlow<Int?>(null)
-    val rssiFlow: StateFlow<Int?> = _rssiFlow
+    /**
+     * RSSI flow, which polls the remote device for RSSI only when there are active subscribers. The polling stops
+     * automatically when the last collector stops.
+     */
+    val rssiFlow: StateFlow<Int?> =
+        callbackFlow {
+            // Initial read for faster UI update
+            safe?.asyncReadRemoteRssi { first -> first.getOrNull()?.let { trySend(it) } }
 
-    @Volatile private var rssiPollingJob: Job? = null
-
-    // Start polling RSSI every 5 seconds (immediate first read)
-    @Suppress("MagicNumber", "LoopWithTooManyJumpStatements")
-    private fun startRssiPolling() {
-        rssiPollingJob?.cancel()
-        val s = safe ?: return
-        // Immediate read for faster UI update
-        s.asyncReadRemoteRssi { first -> first.getOrNull()?.let { _rssiFlow.value = it } }
-        rssiPollingJob =
-            service.serviceScope.handledLaunch {
-                while (true) {
-                    try {
-                        delay(5000)
-                        if (safe == null) break
-                        safe?.asyncReadRemoteRssi { res -> res.getOrNull()?.let { _rssiFlow.value = it } }
-                    } catch (ex: CancellationException) {
-                        break
-                    } catch (ex: Exception) {
-                        debug("RSSI polling error: ${ex.message}")
+            // Launch the polling loop on the service scope
+            @Suppress("LoopWithTooManyJumpStatements", "MagicNumber")
+            val pollingJob =
+                service.serviceScope.handledLaunch {
+                    while (true) {
+                        try {
+                            delay(2500) // Poll every 5 seconds
+                            safe?.asyncReadRemoteRssi { res -> res.getOrNull()?.let { trySend(it) } }
+                        } catch (ex: CancellationException) {
+                            break // Stop polling on cancellation
+                        } catch (ex: Exception) {
+                            Timber.d("RSSI polling error: ${ex.message}")
+                        }
                     }
                 }
-            }
-    }
 
-    // Stop polling and clear current value
-    private fun stopRssiPolling() {
-        rssiPollingJob?.cancel()
-        rssiPollingJob = null
-        _rssiFlow.value = null
+            // This block executes when the last collector stops.
+            awaitClose {
+                pollingJob.cancel()
+                // Clear the value when the flow is closed (no active subscribers).
+                trySend(null)
+            }
+        }
+            .distinctUntilChanged()
+            .stateIn(
+                scope = service.serviceScope,
+                // Keep the polling running for 5 seconds after the last collector disappears
+                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                initialValue = null,
+            )
+
+    /**
+     * If we think we are connected, but we don't hear anything from the device, we might be in a zombie state. This
+     * function forces a read of a characteristic to see if we are really connected.
+     */
+    override fun keepAlive() {
+        if (reconnectJob == null) {
+            // We are not currently trying to reconnect, so lets see if we are really connected
+            Timber.d("Bluetooth keep-alive, checking connection by reading fromNum")
+            // This will force a reconnect if the read fails
+            service.serviceScope.handledLaunch {
+                if (safe != null) { // if we are closing this will be null
+                    doReadFromRadio(false)
+                }
+            }
+        }
     }
 
     /**
@@ -193,15 +220,15 @@ constructor(
         // device is off/not connected)
         val device = bluetoothRepository.getRemoteDevice(address)
         if (device != null) {
-            info("Creating radio interface service.  device=${address.anonymize}")
+            Timber.i("Creating radio interface service.  device=${address.anonymize}")
 
             // Note this constructor also does no comm
-            val s = SafeBluetooth(context, device)
+            val s = SafeBluetooth(context, device, analytics)
             safe = s
 
             startConnect()
         } else {
-            errormsg("Bluetooth adapter not found, assuming running on the emulator!")
+            Timber.e("Bluetooth adapter not found, assuming running on the emulator!")
         }
     }
 
@@ -210,7 +237,7 @@ constructor(
         try {
             safe?.let { s ->
                 val uuid = BTM_TORADIO_CHARACTER
-                debug("queuing ${p.size} bytes to $uuid")
+                Timber.d("queuing ${p.size} bytes to $uuid")
 
                 // Note: we generate a new characteristic each time, because we are about to
                 // change the data and we want the data stored in the closure
@@ -219,7 +246,7 @@ constructor(
                 s.asyncWriteCharacteristic(toRadio, p) { r ->
                     try {
                         r.getOrThrow()
-                        debug("write of ${p.size} bytes to $uuid completed")
+                        Timber.d("write of ${p.size} bytes to $uuid completed")
 
                         if (isFirstSend) {
                             isFirstSend = false
@@ -239,12 +266,12 @@ constructor(
 
     /** We had some problem, schedule a reconnection attempt (if one isn't already queued) */
     private fun scheduleReconnect(reason: String) {
-        stopRssiPolling()
+        // stopRssiPolling() is no longer needed, as flow management handles polling lifecycle
         if (reconnectJob == null) {
-            warn("Scheduling reconnect because $reason")
+            Timber.w("Scheduling reconnect because $reason")
             reconnectJob = service.serviceScope.handledLaunch { retryDueToException() }
         } else {
-            warn("Skipping reconnect for $reason")
+            Timber.w("Skipping reconnect for $reason")
         }
     }
 
@@ -293,7 +320,7 @@ constructor(
         exceptionReporter {
             // If the gatt has been destroyed, skip the refresh attempt
             safe?.gatt?.let { gatt ->
-                debug("DOING FORCE REFRESH")
+                Timber.d("DOING FORCE REFRESH")
                 val refresh: Method = gatt.javaClass.getMethod("refresh")
                 refresh.invoke(gatt)
             }
@@ -322,7 +349,7 @@ constructor(
                     }
                 } catch (e: RadioNotConnectedException) {
                     // Don't report autobugs for this, getting an exception here is expected behavior
-                    errormsg("Ending FromNum read, radio not connected", e)
+                    Timber.e(e, "Ending FromNum read, radio not connected")
                 }
             }
         }
@@ -342,7 +369,7 @@ constructor(
             val backoffMillis = (1000 * (1 shl reconnectAttempts.coerceAtMost(maxReconnectionAttempts))).toLong()
             // Exponential backoff, capped at 64s
             reconnectAttempts++
-            warn(
+            Timber.w(
                 "Forcing disconnect and hopefully device will comeback" +
                     " (disabling forced refresh). Reconnect attempt $reconnectAttempts," +
                     " waiting ${backoffMillis}ms.",
@@ -358,18 +385,18 @@ constructor(
             service.onDisconnect(false) // assume we will fail
             delay(backoffMillis) // Give some nasty time for buggy BLE stacks to shutdown
             reconnectJob = null // Any new reconnect requests after this will be allowed to run
-            warn("Attempting reconnect")
+            Timber.w("Attempting reconnect")
             if (safe != null) {
                 // check again, because we just slept, and someone might have closed our interface
                 startConnect()
             } else {
-                warn("Not connecting, because safe==null, someone must have closed us")
+                Timber.w("Not connecting, because safe==null, someone must have closed us")
             }
         } else {
-            warn("Abandoning reconnect because safe==null, someone must have closed the device")
+            Timber.w("Abandoning reconnect because safe==null, someone must have closed the device")
         }
     } catch (ex: CancellationException) {
-        warn("retryDueToException was cancelled")
+        Timber.w("retryDueToException was cancelled")
     } finally {
         reconnectJob = null
     }
@@ -385,7 +412,7 @@ constructor(
     private fun doDiscoverServicesAndInit() {
         val s = safe
         if (s == null) {
-            warn("Interface is shutting down, so skipping discover")
+            Timber.w("Interface is shutting down, so skipping discover")
         } else {
             debug("🔍 Starting BLE service discovery")
             s.asyncDiscoverServices { discRes ->
@@ -395,6 +422,7 @@ constructor(
 
                     service.serviceScope.handledLaunch {
                         try {
+                            debug("🔍 Discovered services!")
                             debug("🕐 Waiting 1000ms before accessing characteristics (Android BLE quirk)")
                             delay(
                                 1000,
@@ -425,7 +453,7 @@ constructor(
                     }
                 } catch (ex: BLEException) {
                     if (s.gatt == null) {
-                        warn("GATT was closed while discovering, assume we are shutting down")
+                        Timber.w("GATT was closed while discovering, assume we are shutting down")
                     } else {
                         scheduleReconnect("Unexpected error discovering services, forcing disconnect $ex")
                     }
@@ -442,8 +470,12 @@ constructor(
         reconnectAttempts = 0 // Reset backoff on successful connection
 
         service.serviceScope.handledLaunch {
-            info("Connected to radio!")
-            startRssiPolling()
+            Timber.i("Connected to radio!")
+            // The RSSI flow is now managed by its subscription count (WhileSubscribed)
+
+            // After connecting, request a high connection priority for better stability
+            val success = safe?.gatt?.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+            Timber.d("Requested high connection priority: $success")
 
             if (
                 needForceRefresh
@@ -466,7 +498,7 @@ constructor(
                 safe?.asyncRequestMtu(512) { mtuRes ->
                     try {
                         mtuRes.getOrThrow()
-                        debug("MTU change attempted")
+                        Timber.d("MTU change attempted")
 
                         // throw BLEException("Test MTU set failed")
 
@@ -484,10 +516,10 @@ constructor(
 
     override fun close() {
         reconnectJob?.cancel() // Cancel any queued reconnect attempts
-        stopRssiPolling()
+        // stopRssiPolling() is no longer needed, as flow management handles polling lifecycle
 
         if (safe != null) {
-            info("Closing BluetoothInterface")
+            Timber.i("Closing BluetoothInterface")
             val s = safe
             safe = null // We do this first, because if we throw we still want to mark that we no longer have a valid
             // connection
@@ -495,10 +527,10 @@ constructor(
             try {
                 s?.close()
             } catch (_: BLEConnectionClosing) {
-                warn("Ignoring BLE errors while closing")
+                Timber.w("Ignoring BLE errors while closing")
             }
         } else {
-            debug("Radio was not connected, skipping disable")
+            Timber.d("Radio was not connected, skipping disable")
         }
     }
 

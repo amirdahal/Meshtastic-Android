@@ -21,6 +21,7 @@ import android.Manifest
 import android.content.ClipData
 import android.net.Uri
 import android.os.RemoteException
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -50,6 +51,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -74,6 +76,7 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -89,19 +92,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.geeksville.mesh.AppOnlyProtos.ChannelSet
 import com.geeksville.mesh.ChannelProtos
 import com.geeksville.mesh.ConfigProtos
-import com.geeksville.mesh.analytics.DataPair
-import com.geeksville.mesh.android.BuildUtils.debug
-import com.geeksville.mesh.android.BuildUtils.errormsg
-import com.geeksville.mesh.android.GeeksvilleApplication
 import com.geeksville.mesh.channelSet
 import com.geeksville.mesh.copy
-import com.geeksville.mesh.model.UIViewModel
-import com.geeksville.mesh.navigation.ConfigRoute
-import com.geeksville.mesh.navigation.getNavRouteFrom
-import com.geeksville.mesh.service.ConnectionState
-import com.geeksville.mesh.ui.settings.radio.RadioConfigViewModel
-import com.geeksville.mesh.ui.settings.radio.components.ChannelSelection
-import com.geeksville.mesh.ui.settings.radio.components.PacketResponseStateDialog
+import com.geeksville.mesh.ui.common.components.ScannedQrCodeDialog
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -113,9 +106,17 @@ import org.meshtastic.core.model.util.getChannelUrl
 import org.meshtastic.core.model.util.qrCode
 import org.meshtastic.core.model.util.toChannelSet
 import org.meshtastic.core.navigation.Route
+import org.meshtastic.core.service.ConnectionState
 import org.meshtastic.core.strings.R
 import org.meshtastic.core.ui.component.AdaptiveTwoPane
+import org.meshtastic.core.ui.component.MainAppBar
 import org.meshtastic.core.ui.component.PreferenceFooter
+import org.meshtastic.feature.settings.navigation.ConfigRoute
+import org.meshtastic.feature.settings.navigation.getNavRouteFrom
+import org.meshtastic.feature.settings.radio.RadioConfigViewModel
+import org.meshtastic.feature.settings.radio.component.ChannelSelection
+import org.meshtastic.feature.settings.radio.component.PacketResponseStateDialog
+import timber.log.Timber
 
 /**
  * Composable screen for managing and sharing Meshtastic channels. Allows users to view, edit, and share channel
@@ -125,9 +126,10 @@ import org.meshtastic.core.ui.component.PreferenceFooter
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 fun ChannelScreen(
-    viewModel: UIViewModel = hiltViewModel(),
+    viewModel: ChannelViewModel = hiltViewModel(),
     radioConfigViewModel: RadioConfigViewModel = hiltViewModel(),
     onNavigate: (Route) -> Unit,
+    onNavigateUp: () -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -143,6 +145,8 @@ fun ChannelScreen(
     var showResetDialog by remember { mutableStateOf(false) }
 
     var shouldAddChannelsState by remember { mutableStateOf(true) }
+
+    val requestChannelSet by viewModel.requestChannelSet.collectAsStateWithLifecycle()
 
     /* Animate waiting for the configurations */
     var isWaiting by remember { mutableStateOf(false) }
@@ -176,15 +180,18 @@ fun ChannelScreen(
             settings.addAll(result)
         }
 
+    val context = LocalContext.current
     val barcodeLauncher =
         rememberLauncherForActivityResult(ScanContract()) { result ->
             if (result.contents != null) {
-                viewModel.requestChannelUrl(result.contents.toUri())
+                viewModel.requestChannelUrl(result.contents.toUri()) {
+                    Toast.makeText(context, R.string.channel_invalid, Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
     fun zxingScan() {
-        debug("Starting zxing QR code scanner")
+        Timber.d("Starting zxing QR code scanner")
         val zxingScan = ScanOptions()
         zxingScan.setCameraId(0)
         zxingScan.setPrompt("")
@@ -211,12 +218,12 @@ fun ChannelScreen(
             viewModel.setChannels(newChannelSet)
             // Since we are writing to DeviceConfig, that will trigger the rest of the GUI update (QR code etc)
         } catch (ex: RemoteException) {
-            errormsg("ignoring channel problem", ex)
+            Timber.e(ex, "ignoring channel problem")
 
             channelSet = channels // Throw away user edits
 
             // Tell the user to try again
-            viewModel.showSnackBar(R.string.cant_change_no_radio)
+            Toast.makeText(context, R.string.cant_change_no_radio, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -239,7 +246,7 @@ fun ChannelScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        debug("Switching back to default channel")
+                        Timber.d("Switching back to default channel")
                         installSettings(
                             Channel.default.settings,
                             Channel.default.loraConfig.copy {
@@ -266,76 +273,107 @@ fun ChannelScreen(
         )
     }
 
-    val listState = rememberLazyListState()
-    LazyColumn(state = listState, contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) {
-        item {
-            ChannelListView(
-                enabled = enabled,
-                channelSet = channelSet,
-                modemPresetName = modemPresetName,
-                channelSelections = channelSelections,
-                shouldAddChannel = shouldAddChannelsState,
-                onClick = {
-                    isWaiting = true
-                    radioConfigViewModel.setResponseStateLoading(ConfigRoute.CHANNELS)
-                },
+    requestChannelSet?.let { ScannedQrCodeDialog(it, onDismiss = { viewModel.clearRequestChannelUrl() }) }
+
+    Scaffold(
+        topBar = {
+            MainAppBar(
+                title = "",
+                ourNode = null,
+                showNodeChip = false,
+                canNavigateUp = true,
+                onNavigateUp = onNavigateUp,
+                actions = {},
+                onClickChip = {},
             )
-            EditChannelUrl(
-                enabled = enabled,
-                channelUrl = selectedChannelSet.getChannelUrl(shouldAdd = shouldAddChannelsState),
-                onConfirm = viewModel::requestChannelUrl,
-            )
-        }
-        item {
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                SegmentedButton(
-                    label = { Text(text = stringResource(R.string.replace)) },
-                    onClick = { shouldAddChannelsState = false },
-                    selected = !shouldAddChannelsState,
-                    shape = SegmentedButtonDefaults.itemShape(0, 2),
+        },
+    ) { innerPadding ->
+        val listState = rememberLazyListState()
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            item {
+                ChannelListView(
+                    enabled = enabled,
+                    channelSet = channelSet,
+                    modemPresetName = modemPresetName,
+                    channelSelections = channelSelections,
+                    shouldAddChannel = shouldAddChannelsState,
+                    onClick = {
+                        isWaiting = true
+                        radioConfigViewModel.setResponseStateLoading(ConfigRoute.CHANNELS)
+                    },
                 )
-                SegmentedButton(
-                    label = { Text(text = stringResource(R.string.add)) },
-                    onClick = { shouldAddChannelsState = true },
-                    selected = shouldAddChannelsState,
-                    shape = SegmentedButtonDefaults.itemShape(1, 2),
+                EditChannelUrl(
+                    enabled = enabled,
+                    channelUrl = selectedChannelSet.getChannelUrl(shouldAdd = shouldAddChannelsState),
+                    onTrackShare = viewModel::trackShare,
+                    onConfirm = {
+                        viewModel.requestChannelUrl(it) {
+                            Toast.makeText(context, R.string.channel_invalid, Toast.LENGTH_SHORT).show()
+                        }
+                    },
                 )
             }
-        }
-        item {
-            ModemPresetInfo(
-                modemPresetName = modemPresetName,
-                onClick = {
-                    isWaiting = true
-                    radioConfigViewModel.setResponseStateLoading(ConfigRoute.LORA)
-                },
-            )
-        }
-        item {
-            PreferenceFooter(
-                enabled = enabled,
-                negativeText = R.string.reset,
-                onNegativeClicked = {
-                    focusManager.clearFocus()
-                    showResetDialog = true
-                },
-                positiveText = R.string.scan,
-                onPositiveClicked = {
-                    focusManager.clearFocus()
-                    if (cameraPermissionState.status.isGranted) {
-                        zxingScan()
-                    } else {
-                        cameraPermissionState.launchPermissionRequest()
-                    }
-                },
-            )
+            item {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                    SegmentedButton(
+                        label = { Text(text = stringResource(R.string.replace)) },
+                        onClick = { shouldAddChannelsState = false },
+                        selected = !shouldAddChannelsState,
+                        shape = SegmentedButtonDefaults.itemShape(0, 2),
+                    )
+                    SegmentedButton(
+                        label = { Text(text = stringResource(R.string.add)) },
+                        onClick = { shouldAddChannelsState = true },
+                        selected = shouldAddChannelsState,
+                        shape = SegmentedButtonDefaults.itemShape(1, 2),
+                    )
+                }
+            }
+            item {
+                ModemPresetInfo(
+                    modemPresetName = modemPresetName,
+                    onClick = {
+                        isWaiting = true
+                        radioConfigViewModel.setResponseStateLoading(ConfigRoute.LORA)
+                    },
+                )
+            }
+            item {
+                PreferenceFooter(
+                    enabled = enabled,
+                    negativeText = R.string.reset,
+                    onNegativeClicked = {
+                        focusManager.clearFocus()
+                        showResetDialog = true
+                    },
+                    positiveText = R.string.scan,
+                    onPositiveClicked = {
+                        focusManager.clearFocus()
+                        if (cameraPermissionState.status.isGranted) {
+                            zxingScan()
+                        } else {
+                            cameraPermissionState.launchPermissionRequest()
+                        }
+                    },
+                )
+            }
         }
     }
 }
 
 @Suppress("LongMethod")
 @Composable
-private fun EditChannelUrl(enabled: Boolean, channelUrl: Uri, modifier: Modifier = Modifier, onConfirm: (Uri) -> Unit) {
+private fun EditChannelUrl(
+    enabled: Boolean,
+    channelUrl: Uri,
+    modifier: Modifier = Modifier,
+    onTrackShare: () -> Unit,
+    onConfirm: (Uri) -> Unit,
+) {
     val focusManager = LocalFocusManager.current
     val clipboardManager = LocalClipboard.current
     val coroutineScope = rememberCoroutineScope()
@@ -383,7 +421,7 @@ private fun EditChannelUrl(enabled: Boolean, channelUrl: Uri, modifier: Modifier
 
                         else -> {
                             // track how many times users share channels
-                            GeeksvilleApplication.analytics.track("share", DataPair("content_type", "channel"))
+                            onTrackShare()
                             coroutineScope.launch {
                                 clipboardManager.setClipEntry(
                                     ClipEntry(ClipData.newPlainText(label, valueState.toString())),

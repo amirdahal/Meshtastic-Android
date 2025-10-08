@@ -23,30 +23,25 @@ import android.os.RemoteException
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavHostController
 import com.geeksville.mesh.AdminProtos
 import com.geeksville.mesh.AppOnlyProtos
-import com.geeksville.mesh.ChannelProtos
-import com.geeksville.mesh.ChannelProtos.ChannelSettings
 import com.geeksville.mesh.ConfigProtos.Config
-import com.geeksville.mesh.IMeshService
 import com.geeksville.mesh.LocalOnlyProtos.LocalConfig
 import com.geeksville.mesh.LocalOnlyProtos.LocalModuleConfig
 import com.geeksville.mesh.MeshProtos
-import com.geeksville.mesh.android.Logging
-import com.geeksville.mesh.channel
 import com.geeksville.mesh.channelSet
-import com.geeksville.mesh.channelSettings
 import com.geeksville.mesh.config
 import com.geeksville.mesh.copy
 import com.geeksville.mesh.repository.radio.MeshActivity
 import com.geeksville.mesh.repository.radio.RadioInterfaceService
 import com.geeksville.mesh.service.MeshServiceNotifications
-import com.geeksville.mesh.service.ServiceRepository
-import com.geeksville.mesh.util.safeNumber
+import com.geeksville.mesh.ui.sharing.toSharedContact
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +57,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.meshtastic.core.data.repository.DeviceHardwareRepository
+import org.meshtastic.core.analytics.platform.PlatformAnalytics
 import org.meshtastic.core.data.repository.FirmwareReleaseRepository
 import org.meshtastic.core.data.repository.MeshLogRepository
 import org.meshtastic.core.data.repository.NodeRepository
@@ -73,9 +68,11 @@ import org.meshtastic.core.database.entity.QuickChatAction
 import org.meshtastic.core.database.entity.asDeviceVersion
 import org.meshtastic.core.database.model.Node
 import org.meshtastic.core.datastore.UiPreferencesDataSource
-import org.meshtastic.core.model.DeviceHardware
 import org.meshtastic.core.model.util.toChannelSet
+import org.meshtastic.core.service.IMeshService
+import org.meshtastic.core.service.ServiceRepository
 import org.meshtastic.core.strings.R
+import timber.log.Timber
 import javax.inject.Inject
 
 // Given a human name, strip out the first letter of the first three words and return that as the
@@ -108,34 +105,6 @@ fun getInitials(fullName: String): String {
 
 private fun String.withoutEmojis(): String = filterNot { char -> char.isSurrogate() }
 
-/**
- * Builds a [Channel] list from the difference between two [ChannelSettings] lists. Only changes are included in the
- * resulting list.
- *
- * @param new The updated [ChannelSettings] list.
- * @param old The current [ChannelSettings] list (required when disabling unused channels).
- * @return A [Channel] list containing only the modified channels.
- */
-internal fun getChannelList(new: List<ChannelSettings>, old: List<ChannelSettings>): List<ChannelProtos.Channel> =
-    buildList {
-        for (i in 0..maxOf(old.lastIndex, new.lastIndex)) {
-            if (old.getOrNull(i) != new.getOrNull(i)) {
-                add(
-                    channel {
-                        role =
-                            when (i) {
-                                0 -> ChannelProtos.Channel.Role.PRIMARY
-                                in 1..new.lastIndex -> ChannelProtos.Channel.Role.SECONDARY
-                                else -> ChannelProtos.Channel.Role.DISABLED
-                            }
-                        index = i
-                        settings = new.getOrNull(i) ?: channelSettings {}
-                    },
-                )
-            }
-        }
-    }
-
 data class Contact(
     val contactKey: String,
     val shortName: String,
@@ -160,28 +129,16 @@ constructor(
     private val serviceRepository: ServiceRepository,
     radioInterfaceService: RadioInterfaceService,
     meshLogRepository: MeshLogRepository,
-    private val deviceHardwareRepository: DeviceHardwareRepository,
     private val quickChatActionRepository: QuickChatActionRepository,
     firmwareReleaseRepository: FirmwareReleaseRepository,
     private val uiPreferencesDataSource: UiPreferencesDataSource,
     private val meshServiceNotifications: MeshServiceNotifications,
-) : ViewModel(),
-    Logging {
+    private val analytics: PlatformAnalytics,
+) : ViewModel() {
 
     val theme: StateFlow<Int> = uiPreferencesDataSource.theme
 
-    val firmwareVersion = myNodeInfo.mapNotNull { nodeInfo -> nodeInfo?.firmwareVersion }
-
     val firmwareEdition = meshLogRepository.getMyNodeInfo().map { nodeInfo -> nodeInfo?.firmwareEdition }
-
-    val deviceHardware: StateFlow<DeviceHardware?> =
-        ourNodeInfo
-            .mapNotNull { nodeInfo ->
-                nodeInfo?.user?.hwModel?.let { hwModel ->
-                    deviceHardwareRepository.getDeviceHardwareByModel(hwModel.safeNumber()).getOrNull()
-                }
-            }
-            .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5_000), initialValue = null)
 
     val clientNotification: StateFlow<MeshProtos.ClientNotification?> = serviceRepository.clientNotification
 
@@ -306,25 +263,29 @@ constructor(
             .onEach { channelSet -> _channels.value = channelSet }
             .launchIn(viewModelScope)
 
-        debug("ViewModel created")
+        Timber.d("ViewModel created")
     }
 
     private val _sharedContactRequested: MutableStateFlow<AdminProtos.SharedContact?> = MutableStateFlow(null)
     val sharedContactRequested: StateFlow<AdminProtos.SharedContact?>
         get() = _sharedContactRequested.asStateFlow()
 
-    fun setSharedContactRequested(sharedContact: AdminProtos.SharedContact?) {
-        _sharedContactRequested.value = sharedContact
+    fun setSharedContactRequested(url: Uri) {
+        runCatching { _sharedContactRequested.value = url.toSharedContact() }
+            .onFailure { ex ->
+                Timber.e(ex, "Shared contact error")
+                showSnackBar(R.string.contact_invalid)
+            }
+    }
+
+    /** Called immediately after activity observes requestChannelUrl */
+    fun clearSharedContactRequested() {
+        _sharedContactRequested.value = null
     }
 
     // Connection state to our radio device
     val connectionState
         get() = serviceRepository.connectionState
-
-    val isConnectedStateFlow =
-        serviceRepository.connectionState
-            .map { it.isConnected() }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _requestChannelSet = MutableStateFlow<AppOnlyProtos.ChannelSet?>(null)
     val requestChannelSet: StateFlow<AppOnlyProtos.ChannelSet?>
@@ -332,7 +293,7 @@ constructor(
 
     fun requestChannelUrl(url: Uri) = runCatching { _requestChannelSet.value = url.toChannelSet() }
         .onFailure { ex ->
-            errormsg("Channel url error: ${ex.message}")
+            Timber.e(ex, "Channel url error")
             showSnackBar(R.string.channel_invalid)
         }
 
@@ -343,25 +304,15 @@ constructor(
         _requestChannelSet.value = null
     }
 
-    var txEnabled: Boolean
-        get() = config.lora.txEnabled
-        set(value) {
-            updateLoraConfig { it.copy { txEnabled = value } }
-        }
-
     var region: Config.LoRaConfig.RegionCode
         get() = config.lora.region
         set(value) {
             updateLoraConfig { it.copy { region = value } }
         }
 
-    // managed mode disables all access to configuration
-    val isManaged: Boolean
-        get() = config.device.isManaged || config.security.isManaged
-
     override fun onCleared() {
         super.onCleared()
-        debug("ViewModel cleared")
+        Timber.d("ViewModel cleared")
     }
 
     private inline fun updateLoraConfig(crossinline body: (Config.LoRaConfig) -> Config.LoRaConfig) {
@@ -374,25 +325,8 @@ constructor(
         try {
             meshService?.setConfig(config.toByteArray())
         } catch (ex: RemoteException) {
-            errormsg("Set config error:", ex)
+            Timber.e(ex, "Set config error")
         }
-    }
-
-    fun setChannel(channel: ChannelProtos.Channel) {
-        try {
-            meshService?.setChannel(channel.toByteArray())
-        } catch (ex: RemoteException) {
-            errormsg("Set channel error:", ex)
-        }
-    }
-
-    /** Set the radio config (also updates our saved copy in preferences). */
-    fun setChannels(channelSet: AppOnlyProtos.ChannelSet) = viewModelScope.launch {
-        getChannelList(channelSet.settingsList, channels.value.settingsList).forEach(::setChannel)
-        radioConfigRepository.replaceAllSettings(channelSet.settingsList)
-
-        val newConfig = config { lora = channelSet.loraConfig }
-        if (config.lora != newConfig.lora) setConfig(newConfig)
     }
 
     fun addQuickChatAction(action: QuickChatAction) =
@@ -420,5 +354,10 @@ constructor(
 
     fun onAppIntroCompleted() {
         uiPreferencesDataSource.setAppIntroCompleted(true)
+    }
+
+    @Composable
+    fun AddNavigationTrackingEffect(navController: NavHostController) {
+        analytics.AddNavigationTrackingEffect(navController)
     }
 }

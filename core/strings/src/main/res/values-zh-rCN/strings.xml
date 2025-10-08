@@ -19,11 +19,13 @@
     <string name="fallback_node_name">Meshtastic %s</string>
     <string name="node_filter_placeholder">筛选器csvfganw</string>
     <string name="desc_node_filter_clear">清除筛选</string>
+    <string name="node_filter_title">Filter by</string>
     <string name="node_filter_include_unknown">包括未知内容</string>
     <string name="node_filter_only_online">隐藏离线节点</string>
     <string name="node_filter_only_direct">仅显示直连节点</string>
     <string name="node_filter_ignored">您正在查看被忽略的节点，\n点击返回到节点列表。</string>
     <string name="node_filter_show_details">显示详细信息</string>
+    <string name="node_sort_title">Sort by</string>
     <string name="node_sort_button">节点排序选项</string>
     <string name="node_sort_alpha">字母顺序</string>
     <string name="node_sort_channel">频道</string>
@@ -185,6 +187,7 @@
     <string name="meshtastic_service_notifications">服务通知</string>
     <string name="about">关于</string>
     <string name="channel_invalid">此频道 URL 无效，无法使用</string>
+    <string name="contact_invalid">This contact is invalid and can not be added</string>
     <string name="debug_panel">调试面板</string>
     <string name="debug_decoded_payload">解码Payload：</string>
     <string name="debug_logs_export">导出程序日志</string>
@@ -326,9 +329,9 @@
     <string name="air_util_definition">过去一小时内用于传输的空中占用时间百分比。</string>
     <string name="iaq">IAQ</string>
     <string name="encryption_psk">共享密钥</string>
-    <string name="encryption_psk_text">私信使用频道的共享密钥进行加密。</string>
+    <string name="encryption_psk_text">Only channel messages can be sent/received. Direct Messages require the Public Key Infrastructure feature in 2.5+ firmware.</string>
     <string name="encryption_pkc">公钥加密</string>
-    <string name="encryption_pkc_text">私信使用新的公钥基础设施（PKC）进行加密。需要固件版本 2.5 或更高。</string>
+    <string name="encryption_pkc_text">Direct messages are using the new public key infrastructure for encryption.</string>
     <string name="encryption_error">公钥不匹配</string>
     <string name="encryption_error_text">公钥与记录的密钥不匹配。 您可以移除该节点并让它再次交换密钥，但这可能会显示一个更严重的安全问题。 通过另一个信任频道联系用户，以确定密钥更改是否是出厂重置或其他故意操作。</string>
     <string name="exchange_userinfo">交换用户信息</string>
@@ -784,7 +787,8 @@
     <string name="no_pax_metrics_logs">无可用的 PAX 计量日志。</string>
     <string name="wifi_devices">WiFi 设备</string>
     <string name="ble_devices">BLE 设备</string>
-    <string name="bluetooth_paired_devices">Paired Devices</string>
+    <string name="bluetooth_paired_devices">Paired devices</string>
+    <string name="bluetooth_available_devices">Available devices</string>
     <string name="connected_device">Connected Device</string>
     <string name="routing_error_rate_limit_exceeded">超过速率限制。请稍后再试。</string>
     <string name="view_release">查看发行版</string>
@@ -883,4 +887,7 @@
     <string name="two_days">48 Hours</string>
     <string name="last_heard_filter_label">Filter by Last Heard time: %s</string>
     <string name="dbm_value">%1$d dBm</string>
+    <string name="error_no_app_to_handle_link">No application available to handle link.</string>
+    <string name="system_settings">System Settings</string>
+    <string name="no_local_stats">No Stats Available</string>
 </resources>
