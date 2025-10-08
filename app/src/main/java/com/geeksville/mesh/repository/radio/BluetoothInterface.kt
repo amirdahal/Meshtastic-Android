@@ -250,8 +250,10 @@ constructor(
 
     // / Attempt to read from the fromRadio mailbox, if data is found broadcast it to android apps
     private fun doReadFromRadio(firstRead: Boolean) {
+        debug("📡 doReadFromRadio called (firstRead=$firstRead)")
         safe?.let { s ->
             val fromRadio = getCharacteristic(BTM_FROMRADIO_CHARACTER)
+            debug("📖 Reading from fromRadio characteristic: ${fromRadio.uuid}")
             s.asyncReadCharacteristic(fromRadio) {
                 try {
                     val b =
@@ -260,22 +262,26 @@ constructor(
                             .clone() // We clone the array just in case, I'm not sure if they keep reusing the array
 
                     if (b.isNotEmpty()) {
-                        debug("Received ${b.size} bytes from radio")
+                        debug("📥 Received ${b.size} bytes from radio")
                         service.handleFromRadio(b)
 
                         // Queue up another read, until we run out of packets
                         doReadFromRadio(firstRead)
                     } else {
-                        debug("Done reading from radio, fromradio is empty")
+                        debug("⭕ Done reading from radio, fromradio is empty")
                         if (firstRead) {
                             // If we just finished our initial download, now we want to start listening for notifies
+                            debug("🎯 First read completed, starting notification watch")
                             startWatchingFromNum()
                         }
                     }
                 } catch (ex: BLEException) {
+                    errormsg("⚠️ Error during doReadFromRadio: ${ex.message}")
                     scheduleReconnect("error during doReadFromRadio - disconnecting, ${ex.message}")
                 }
             }
+        } ?: run {
+            errormsg("⚠️ doReadFromRadio called but safe is null!")
         }
     }
 
@@ -302,14 +308,16 @@ constructor(
     @Volatile var fromNumChanged = false
 
     private fun startWatchingFromNum() {
+        debug("🔔 Setting up fromNum notifications for characteristic: ${fromNum?.uuid}")
         safe?.setNotify(fromNum, true) {
             // We might get multiple notifies before we get around to reading from the radio - so just set one flag
+            debug("📲 fromNum notification received! Setting fromNumChanged flag")
             fromNumChanged = true
             service.serviceScope.handledLaunch {
                 try {
                     if (fromNumChanged) {
                         fromNumChanged = false
-                        debug("fromNum changed, so we are reading new messages")
+                        debug("📥 fromNum changed, so we are reading new messages")
                         doReadFromRadio(false)
                     }
                 } catch (e: RadioNotConnectedException) {
@@ -379,13 +387,15 @@ constructor(
         if (s == null) {
             warn("Interface is shutting down, so skipping discover")
         } else {
+            debug("🔍 Starting BLE service discovery")
             s.asyncDiscoverServices { discRes ->
                 try {
                     discRes.getOrThrow()
+                    debug("✅ BLE service discovery completed successfully")
 
                     service.serviceScope.handledLaunch {
                         try {
-                            debug("Discovered services!")
+                            debug("🕐 Waiting 1000ms before accessing characteristics (Android BLE quirk)")
                             delay(
                                 1000,
                             ) // android BLE is buggy and needs a 1000ms sleep before calling getChracteristic, or you
@@ -397,14 +407,17 @@ constructor(
                             } */
 
                             fromNum = getCharacteristic(BTM_FROMNUM_CHARACTER)
+                            debug("🎯 Found fromNum characteristic: ${fromNum?.uuid}")
 
                             // We treat the first send by a client as special
                             isFirstSend = true
 
                             // Now tell clients they can (finally use the api)
+                            debug("✅ Calling service.onConnect() - BLE connection established")
                             service.onConnect()
 
                             // Immediately broadcast any queued packets sitting on the device
+                            debug("🚀 Starting initial read from radio")
                             doReadFromRadio(true)
                         } catch (ex: BLEException) {
                             scheduleReconnect("Unexpected error in initial device enumeration, forcing disconnect $ex")
