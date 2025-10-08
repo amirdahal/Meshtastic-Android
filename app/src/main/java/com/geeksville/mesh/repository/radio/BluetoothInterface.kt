@@ -250,6 +250,7 @@ constructor(
 
                         if (isFirstSend) {
                             isFirstSend = false
+                            Timber.d("🎯 First packet sent (likely wantConfigId), starting config read")
                             doReadFromRadio(false)
                         }
                     } catch (ex: Exception) {
@@ -444,9 +445,9 @@ constructor(
                             Timber.d("✅ Calling service.onConnect() - BLE connection established")
                             service.onConnect()
 
-                            // Immediately broadcast any queued packets sitting on the device
-                            Timber.d("🚀 Starting initial read from radio")
-                            doReadFromRadio(true)
+                            // Don't immediately read from radio - let the config flow trigger reads
+                            // The MeshService will send wantConfigId which starts the firmware state machine
+                            Timber.d("🔧 Config handshake will be initiated by MeshService")
                         } catch (ex: BLEException) {
                             scheduleReconnect("Unexpected error in initial device enumeration, forcing disconnect $ex")
                         }
