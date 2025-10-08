@@ -196,7 +196,6 @@ constructor(
             val contact = sharedContact {
                 nodeNum = node.num
                 user = node.user
-                manuallyVerified = node.manuallyVerified
             }
             serviceRepository.onServiceAction(ServiceAction.SendContact(contact = contact))
         } catch (ex: RemoteException) {

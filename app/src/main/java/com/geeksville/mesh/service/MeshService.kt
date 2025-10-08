@@ -1889,9 +1889,9 @@ class MeshService : Service() {
      * @param contact The [AdminProtos.SharedContact] to be imported.
      */
     private fun importContact(contact: AdminProtos.SharedContact) {
-        val verifiedContact = contact.copy { manuallyVerified = true }
-        sendContact(verifiedContact)
-        handleSharedContactImport(contact = verifiedContact)
+        handleReceivedUser(contact.nodeNum, contact.user, manuallyVerified = true)
+        sendContact(contact)
+        handleSharedContactImport(contact = contact)
     }
 
     /**
