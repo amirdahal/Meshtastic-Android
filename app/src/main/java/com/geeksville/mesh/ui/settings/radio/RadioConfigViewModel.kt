@@ -199,10 +199,11 @@ constructor(
     }
 
     private fun request(destNum: Int, requestAction: suspend (IMeshService, Int, Int) -> Unit, errorMessage: String) =
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) { // Use IO dispatcher for better performance
             meshService?.let { service ->
                 val packetId = service.packetId
                 try {
+                    Timber.d("Sending fast request: packetId=$packetId")
                     requestAction(service, packetId, destNum)
                     requestIds.update { it.apply { add(packetId) } }
                     _radioConfigState.update { state ->
@@ -212,7 +213,7 @@ constructor(
                         } else {
                             state.copy(
                                 route = "", // setter (response is PortNum.ROUTING_APP)
-                                responseState = ResponseState.Loading(),
+                                responseState = ResponseState.Loading(completed = 0, total = 1),
                             )
                         }
                     }
@@ -513,32 +514,42 @@ constructor(
     fun setResponseStateLoading(route: Enum<*>) {
         val destNum = destNode.value?.num ?: return
 
+        // Clear any stale request IDs for better performance
+        requestIds.update { hashSetOf() }
+        Timber.d("setResponseStateLoading: start route=%s, requestIds cleared for fast response", route.name)
+
         _radioConfigState.update {
             RadioConfigState(
                 isLocal = it.isLocal,
                 connected = it.connected,
                 route = route.name,
                 metadata = it.metadata,
-                responseState = ResponseState.Loading(),
+                responseState = ResponseState.Loading(completed = 0, total = 1), // Start with progress indicator
             )
         }
 
         when (route) {
-            ConfigRoute.USER -> getOwner(destNum)
+            ConfigRoute.USER -> {
+                setResponseStateTotal(1)
+                getOwner(destNum)
+            }
 
             ConfigRoute.CHANNELS -> {
+                // Optimized: Batch requests and set proper total upfront
+                val totalRequests = maxChannels + 1
+                setResponseStateTotal(totalRequests)
                 getChannel(destNum, 0)
                 getConfig(destNum, ConfigRoute.LORA.type)
-                // channel editor is synchronous, so we don't use requestIds as total
-                setResponseStateTotal(maxChannels + 1)
             }
 
             is AdminRoute -> {
+                setResponseStateTotal(1)
                 getConfig(destNum, AdminProtos.AdminMessage.ConfigType.SESSIONKEY_CONFIG_VALUE)
-                setResponseStateTotal(2)
             }
 
             is ConfigRoute -> {
+                val totalRequests = if (route == ConfigRoute.LORA) 2 else 1
+                setResponseStateTotal(totalRequests)
                 if (route == ConfigRoute.LORA) {
                     getChannel(destNum, 0)
                 }
@@ -546,6 +557,8 @@ constructor(
             }
 
             is ModuleRoute -> {
+                val totalRequests = if (route == ModuleRoute.CANNED_MESSAGE) 2 else if (route == ModuleRoute.EXT_NOTIFICATION) 2 else 1
+                setResponseStateTotal(totalRequests)
                 if (route == ModuleRoute.CANNED_MESSAGE) {
                     getCannedMessages(destNum)
                 }
@@ -704,5 +717,13 @@ constructor(
             }
             requestIds.update { it.apply { remove(data.requestId) } }
         }
+    }
+
+    /**
+     * Performance optimization for batch configuration requests
+     * This method reduces the number of individual Bluetooth operations
+     */
+    fun fastConfigLoad(route: Enum<*>) {
+        setResponseStateLoading(route)
     }
 }

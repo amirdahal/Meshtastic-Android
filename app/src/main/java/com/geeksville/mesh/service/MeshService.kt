@@ -1602,7 +1602,7 @@ class MeshService : Service() {
                         couldUpdate = false,
                         shouldUpdate = false, // TODO add check after re-implementing firmware updates
                         currentPacketId = currentPacketId and 0xffffffffL,
-                        messageTimeoutMsec = 5 * 60 * 1000, // constants from current firmware code
+                        messageTimeoutMsec = 15 * 1000, // Reduced from 5 minutes for real-time performance
                         minAppVersion = minAppVersion,
                         maxChannels = 8,
                         hasWifi = metadata.hasWifi,

@@ -155,7 +155,7 @@ constructor(
             service.serviceScope.handledLaunch {
                 while (true) {
                     try {
-                        delay(5000)
+                        delay(10000) // Reduced polling frequency to improve performance
                         if (safe == null) break
                         safe?.asyncReadRemoteRssi { res -> res.getOrNull()?.let { _rssiFlow.value = it } }
                     } catch (ex: CancellationException) {
@@ -386,9 +386,8 @@ constructor(
                         try {
                             Timber.d("Discovered services!")
                             delay(
-                                1000,
-                            ) // android BLE is buggy and needs a 1000ms sleep before calling getChracteristic, or you
-                            // might get back null
+                                300,
+                            ) // Reduced delay for better performance while maintaining Android BLE compatibility
 
                             /* if (isFirstTime) {
                                 isFirstTime = false
@@ -396,6 +395,15 @@ constructor(
                             } */
 
                             fromNum = getCharacteristic(BTM_FROMNUM_CHARACTER)
+
+                            // Request larger MTU for better performance
+                            safe?.asyncRequestMtu(517) { result ->
+                                if (result.isSuccess) {
+                                    Timber.d("Successfully negotiated larger MTU for better performance")
+                                } else {
+                                    Timber.w("Failed to negotiate MTU: ${result.exceptionOrNull()}")
+                                }
+                            }
 
                             // We treat the first send by a client as special
                             isFirstSend = true

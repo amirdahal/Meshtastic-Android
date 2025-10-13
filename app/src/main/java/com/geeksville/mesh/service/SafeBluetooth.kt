@@ -65,8 +65,8 @@ fun longBLEUUID(hexFour: String): UUID = UUID.fromString("0000$hexFour-0000-1000
  */
 class SafeBluetooth(private val context: Context, private val device: BluetoothDevice) : Closeable {
 
-    // / Timeout before we declare a bluetooth operation failed (used for synchronous API operations only)
-    var timeoutMsec = 20 * 1000L
+    // / Timeout before we declare a bluetooth operation failed (reduced for better performance)
+    var timeoutMsec = 3 * 1000L
 
     // / Users can access the GATT directly as needed
     @Volatile var gatt: BluetoothGatt? = null
@@ -100,19 +100,23 @@ class SafeBluetooth(private val context: Context, private val device: BluetoothD
         val tag: String,
         val completion: com.geeksville.mesh.concurrent.Continuation<*>,
         val timeoutMillis: Long = 0, // If we want to timeout this operation at a certain time, use a non zero value
+        val priority: Int = 0, // Higher number = higher priority for user-initiated requests
         private val startWorkFn: () -> Boolean,
     ) {
 
         // / Start running a queued bit of work, return true for success or false for fatal bluetooth error
         fun startWork(): Boolean {
-            Timber.d("Starting work: $tag")
+            Timber.d("Starting work: $tag (priority: $priority)")
             return startWorkFn()
         }
 
-        override fun toString(): String = "Work:$tag"
+        override fun toString(): String = "Work:$tag(p:$priority)"
 
         // / Connection work items are treated specially
         fun isConnect() = tag == "connect" || tag == "reconnect"
+        
+        // User-initiated requests (config changes, button clicks)
+        fun isUserRequest() = tag.contains("writeC") || tag.contains("config") || priority > 0
     }
 
     /**
@@ -368,11 +372,26 @@ class SafeBluetooth(private val context: Context, private val device: BluetoothD
     }
 
     private fun <T> queueWork(tag: String, cont: Continuation<T>, timeout: Long, initFn: () -> Boolean) {
-        val btCont = BluetoothContinuation(tag, cont, timeout, initFn)
+        queueWork(tag, cont, timeout, 0, initFn)
+    }
+    
+    private fun <T> queueWork(tag: String, cont: Continuation<T>, timeout: Long, priority: Int, initFn: () -> Boolean) {
+        val btCont = BluetoothContinuation(tag, cont, timeout, priority, initFn)
 
         synchronized(workQueue) {
-            Timber.d("Enqueuing work: ${btCont.tag}")
-            workQueue.add(btCont)
+            Timber.d("Enqueuing work: ${btCont.tag} with priority $priority")
+            
+            // Insert based on priority (higher priority first)
+            if (priority > 0) {
+                val insertIndex = workQueue.indexOfFirst { it.priority <= priority }
+                if (insertIndex >= 0) {
+                    workQueue.add(insertIndex, btCont)
+                } else {
+                    workQueue.add(btCont)
+                }
+            } else {
+                workQueue.add(btCont)
+            }
 
             // if we don't have any outstanding operations, run first item in queue
             if (currentWork == null) startNewWork()
@@ -594,10 +613,9 @@ class SafeBluetooth(private val context: Context, private val device: BluetoothD
     private var isSettingMtu = false
 
     /**
-     * mtu operations seem to hang sometimes. To cope with this we have a 5 second timeout before throwing an exception
-     * and cancelling the work
+     * mtu operations are given high priority and shorter timeout for better performance
      */
-    private fun queueRequestMtu(len: Int, cont: Continuation<Unit>) = queueWork("reqMtu", cont, 10 * 1000) {
+    private fun queueRequestMtu(len: Int, cont: Continuation<Unit>) = queueWork("reqMtu", cont, 3 * 1000, 15) {
         isSettingMtu = true
         gatt?.requestMtu(len) ?: false
     }
@@ -615,7 +633,8 @@ class SafeBluetooth(private val context: Context, private val device: BluetoothD
         v: ByteArray,
         cont: Continuation<BluetoothGattCharacteristic>,
         timeout: Long = 0,
-    ) = queueWork("writeC ${c.uuid}", cont, timeout) {
+        priority: Int = 0,
+    ) = queueWork("writeC ${c.uuid}", cont, timeout, priority) {
         currentReliableWrite = null
         c.value = v
         gatt?.writeCharacteristic(c) ?: false
@@ -625,7 +644,7 @@ class SafeBluetooth(private val context: Context, private val device: BluetoothD
         c: BluetoothGattCharacteristic,
         v: ByteArray,
         cb: (Result<BluetoothGattCharacteristic>) -> Unit,
-    ) = queueWriteCharacteristic(c, v, CallbackContinuation(cb))
+    ) = queueWriteCharacteristic(c, v, CallbackContinuation(cb), 0, 10) // High priority for user requests
 
     fun writeCharacteristic(
         c: BluetoothGattCharacteristic,

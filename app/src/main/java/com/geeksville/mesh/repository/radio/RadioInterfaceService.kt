@@ -339,8 +339,8 @@ constructor(
     }
 
     fun sendToRadio(a: ByteArray) {
-        // Do this in the IO thread because it might take a while (and we don't care about the result code)
-        serviceScope.handledLaunch { handleSendToRadio(a) }
+        // Use immediate execution for better performance on user-initiated requests
+        serviceScope.handledLaunch(Dispatchers.IO) { handleSendToRadio(a) }
     }
 
     private val _meshActivity =

@@ -50,12 +50,16 @@ fun <T> PacketResponseStateDialog(state: ResponseState<T>, onDismiss: () -> Unit
                 if (state is ResponseState.Loading) {
                     val progress by
                         animateFloatAsState(
-                            targetValue = state.completed.toFloat() / state.total.toFloat(),
+                            targetValue = if (state.total > 0) state.completed.toFloat() / state.total.toFloat() else 0f,
                             label = "progress",
                         )
-                    Text("%.0f%%".format(progress * 100))
-                    LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                    if (state.total == state.completed) onComplete()
+                    Text("Loading configuration...")
+                    Text("${state.completed} of ${state.total} requests completed")
+                    LinearProgressIndicator(
+                        progress = { progress }, 
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                    )
+                    if (state.total > 0 && state.total == state.completed) onComplete()
                 }
                 if (state is ResponseState.Success) {
                     Text(text = stringResource(id = R.string.delivery_confirmed))
